@@ -4,7 +4,7 @@
  */
 
 // API Base URL (Configured for Spring Boot port 8082)
-const API_BASE = 'http://localhost:8082/api';
+const API_BASE = '/api';
 
 /**
  * Get current user from sessionStorage / localStorage
