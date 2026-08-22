@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Directory - HMS Admin</title>
+
+  <!-- Bootstrap 3 CSS -->
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-custom navbar-static-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+        </button>
+        <a class="navbar-brand" href="dashboard.html">
+          <span class="glyphicon glyphicon-lock"></span> HMS Admin Console
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="dashboard.html"><span class="glyphicon glyphicon-dashboard"></span> Dashboard</a></li>
+          <li><a href="applications.html"><span class="glyphicon glyphicon-folder-open"></span> Applications</a></li>
+          <li><a href="merit-list.html"><span class="glyphicon glyphicon-list-alt"></span> Merit List</a></li>
+          <li><a href="allotment.html"><span class="glyphicon glyphicon-bed"></span> Allotment</a></li>
+          <li class="active"><a href="students.html"><span class="glyphicon glyphicon-user"></span> Students</a></li>
+          <li><a href="reports.html"><span class="glyphicon glyphicon-stats"></span> Reports</a></li>
+          <li><a href="#" id="btn-nav-logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container page-wrapper">
+
+    <!-- Page Header Box -->
+    <div class="page-header-box">
+      <h2>Enrolled Students Directory</h2>
+      <p>Search, filter, and inspect applicant records across branches, categories, and admission statuses.</p>
+    </div>
+
+    <!-- Multi-Filter Toolbar -->
+    <div class="panel panel-custom">
+      <div class="panel-heading">
+        <h3 class="panel-title"><span class="glyphicon glyphicon-filter"></span> Filter Students</h3>
+      </div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-md-2 col-sm-4 form-group">
+            <label for="filter-branch">Branch</label>
+            <select class="form-control input-sm" id="filter-branch">
+              <option value="ALL">All Branches</option>
+              <option value="COMPUTER">Computer</option>
+              <option value="MECHANICAL">Mechanical</option>
+              <option value="CIVIL">Civil</option>
+              <option value="ELECTRICAL">Electrical</option>
+              <option value="IT">Information Tech</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 col-sm-4 form-group">
+            <label for="filter-year">Class Year</label>
+            <select class="form-control input-sm" id="filter-year">
+              <option value="ALL">All Years</option>
+              <option value="1">1st Year</option>
+              <option value="2">2nd Year</option>
+              <option value="3">3rd Year</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 col-sm-4 form-group">
+            <label for="filter-gender">Gender</label>
+            <select class="form-control input-sm" id="filter-gender">
+              <option value="ALL">All Genders</option>
+              <option value="BOYS">BOYS</option>
+              <option value="GIRLS">GIRLS</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 col-sm-4 form-group">
+            <label for="filter-category">Category</label>
+            <select class="form-control input-sm" id="filter-category">
+              <option value="ALL">All Categories</option>
+              <option value="OPEN">OPEN</option>
+              <option value="OBC">OBC</option>
+              <option value="SC">SC</option>
+              <option value="ST">ST</option>
+              <option value="EWS">EWS</option>
+              <option value="VJNT">VJNT</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 col-sm-4 form-group">
+            <label for="filter-status">Status</label>
+            <select class="form-control input-sm" id="filter-status">
+              <option value="ALL">All Statuses</option>
+              <option value="PENDING">PENDING</option>
+              <option value="APPROVED">APPROVED</option>
+              <option value="REJECTED">REJECTED</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 col-sm-4 form-group">
+            <label for="search-student">Search</label>
+            <input type="text" class="form-control input-sm" id="search-student" placeholder="Name/Enrollment...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="panel panel-custom">
+      <div class="panel-heading">
+        <h3 class="panel-title"><span class="glyphicon glyphicon-th-list"></span> Registered Students</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-custom table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Student Name</th>
+              <th>Enrollment No</th>
+              <th>Gender</th>
+              <th>Branch / Year</th>
+              <th>Category</th>
+              <th>Aggregate %</th>
+              <th>Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="students-tbody">
+            <tr>
+              <td colspan="9" class="text-center py-4">Loading student records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Manual Email Modal -->
+  <div class="modal fade" id="modal-send-email" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title"><span class="glyphicon glyphicon-envelope"></span> Send Email to Student</h4>
+        </div>
+        <div class="modal-body">
+          <div id="modal-email-alert"></div>
+          <form id="form-send-student-email">
+            <div class="form-group">
+              <label for="email-to">Recipient Email *</label>
+              <input type="email" class="form-control" id="email-to" readonly required>
+            </div>
+            <div class="form-group">
+              <label for="email-subject">Subject *</label>
+              <input type="text" class="form-control" id="email-subject" placeholder="e.g. Hostel Admission Document Notice" required>
+            </div>
+            <div class="form-group">
+              <label for="email-message">Message *</label>
+              <textarea class="form-control" id="email-message" rows="5" placeholder="Enter your message here..." required></textarea>
+            </div>
+            <button type="submit" id="btn-send-student-email" class="btn btn-primary-custom btn-block">
+              <span class="glyphicon glyphicon-send"></span> Dispatch Email
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="container text-center">
+      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    $(document).ready(function() {
+      initAdminStudents();
+    });
+  </script>
+</body>
+</html>

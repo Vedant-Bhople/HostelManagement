@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seat Allotment & Vacancy - HMS Admin</title>
+
+  <!-- Bootstrap 3 CSS -->
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-custom navbar-static-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+        </button>
+        <a class="navbar-brand" href="dashboard.html">
+          <span class="glyphicon glyphicon-lock"></span> HMS Admin Console
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="dashboard.html"><span class="glyphicon glyphicon-dashboard"></span> Dashboard</a></li>
+          <li><a href="applications.html"><span class="glyphicon glyphicon-folder-open"></span> Applications</a></li>
+          <li><a href="merit-list.html"><span class="glyphicon glyphicon-list-alt"></span> Merit List</a></li>
+          <li class="active"><a href="allotment.html"><span class="glyphicon glyphicon-bed"></span> Allotment</a></li>
+          <li><a href="students.html"><span class="glyphicon glyphicon-user"></span> Students</a></li>
+          <li><a href="reports.html"><span class="glyphicon glyphicon-stats"></span> Reports</a></li>
+          <li><a href="#" id="btn-nav-logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container page-wrapper">
+
+    <!-- Page Header Box -->
+    <div class="page-header-box">
+      <h2>Hostel Seat Allotment & Vacancy Management</h2>
+      <p>Execute automated category quota allotment and manage real-time vacancies & waiting lists.</p>
+    </div>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs sub-nav-tabs" role="tablist">
+      <li role="presentation" class="active"><a href="#tab-generate-allotment" aria-controls="tab-generate-allotment" role="tab" data-toggle="tab"><span class="glyphicon glyphicon-play"></span> Run Allotment Engine</a></li>
+      <li role="presentation"><a href="#tab-vacancy-waiting" aria-controls="tab-vacancy-waiting" role="tab" data-toggle="tab"><span class="glyphicon glyphicon-list"></span> Vacancy & Waiting Queue</a></li>
+    </ul>
+
+    <!-- Tab Panes -->
+    <div class="tab-content">
+      
+      <!-- TAB 1: RUN ALLOTMENT -->
+      <div role="tabpanel" class="tab-pane active" id="tab-generate-allotment">
+        
+        <div class="panel panel-custom">
+          <div class="panel-heading">
+            <h3 class="panel-title"><span class="glyphicon glyphicon-cog"></span> 1. Select Parameters for Seat Allocation</h3>
+          </div>
+          <div class="panel-body">
+            <form id="form-generate-allotment" class="row">
+              <div class="col-md-3 col-sm-4 form-group">
+                <label for="allot-gender">Gender / Hostel Wing</label>
+                <select class="form-control" id="allot-gender">
+                  <option value="BOYS">BOYS (Boys Hostel)</option>
+                  <option value="GIRLS">GIRLS (Girls Hostel)</option>
+                </select>
+              </div>
+
+              <div class="col-md-4 col-sm-4 form-group">
+                <label for="allot-branch">Engineering Branch</label>
+                <select class="form-control" id="allot-branch">
+                  <option value="COMPUTER">Computer Engineering</option>
+                  <option value="MECHANICAL">Mechanical Engineering</option>
+                  <option value="CIVIL">Civil Engineering</option>
+                  <option value="ELECTRICAL">Electrical Engineering</option>
+                  <option value="IT">Information Technology</option>
+                </select>
+              </div>
+
+              <div class="col-md-3 col-sm-4 form-group">
+                <label for="allot-year">Academic Year</label>
+                <select class="form-control" id="allot-year">
+                  <option value="1">First Year (1st Year)</option>
+                  <option value="2">Second Year (2nd Year)</option>
+                  <option value="3">Third Year (3rd Year)</option>
+                </select>
+              </div>
+
+              <div class="col-md-2 col-sm-12 form-group" style="padding-top: 25px;">
+                <button type="submit" class="btn btn-primary-custom btn-block">
+                  <span class="glyphicon glyphicon-bed"></span> Run Allotment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel panel-custom">
+          <div class="panel-heading">
+            <h3 class="panel-title"><span class="glyphicon glyphicon-th-large"></span> Allotment Matrix</h3>
+          </div>
+          <div class="panel-body" id="allotment-results-box">
+            <div class="empty-box">
+              <span class="glyphicon glyphicon-bed"></span>
+              <h4>No Allotment Generated Yet</h4>
+              <p>Run the allotment engine above to assign seats according to the published merit list.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TAB 2: VACANCY & WAITING QUEUE -->
+      <div role="tabpanel" class="tab-pane" id="tab-vacancy-waiting">
+        
+        <div class="panel panel-custom">
+          <div class="panel-heading">
+            <h3 class="panel-title"><span class="glyphicon glyphicon-search"></span> Check Vacancy by Branch & Year</h3>
+          </div>
+          <div class="panel-body">
+            <form id="form-check-vacancy" class="row">
+              <div class="col-md-3 col-sm-4 form-group">
+                <label for="vac-gender">Gender / Hostel Wing</label>
+                <select class="form-control" id="vac-gender">
+                  <option value="BOYS">BOYS (Boys Hostel)</option>
+                  <option value="GIRLS">GIRLS (Girls Hostel)</option>
+                </select>
+              </div>
+
+              <div class="col-md-4 col-sm-4 form-group">
+                <label for="vac-branch">Engineering Branch</label>
+                <select class="form-control" id="vac-branch">
+                  <option value="COMPUTER">Computer Engineering</option>
+                  <option value="MECHANICAL">Mechanical Engineering</option>
+                  <option value="CIVIL">Civil Engineering</option>
+                  <option value="ELECTRICAL">Electrical Engineering</option>
+                  <option value="IT">Information Technology</option>
+                </select>
+              </div>
+
+              <div class="col-md-3 col-sm-4 form-group">
+                <label for="vac-year">Academic Year</label>
+                <select class="form-control" id="vac-year">
+                  <option value="1">First Year (1st Year)</option>
+                  <option value="2">Second Year (2nd Year)</option>
+                  <option value="3">Third Year (3rd Year)</option>
+                </select>
+              </div>
+
+              <div class="col-md-2 col-sm-12 form-group" style="padding-top: 25px;">
+                <button type="submit" class="btn btn-default btn-block">
+                  <span class="glyphicon glyphicon-refresh"></span> Check Status
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="vacancy-stats-box"></div>
+
+        <div class="panel panel-custom">
+          <div class="panel-heading">
+            <div class="row">
+              <div class="col-xs-6">
+                <h3 class="panel-title"><span class="glyphicon glyphicon-time"></span> Waiting List Queue</h3>
+              </div>
+              <div class="col-xs-6 text-right hidden" id="allot-next-toolbar">
+                <button id="btn-allot-next-waiting" class="btn btn-success-custom btn-sm">
+                  <span class="glyphicon glyphicon-arrow-right"></span> Allot Next Waiting Student
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body" id="waiting-list-box">
+            <div class="empty-box">
+              <p class="text-muted">Select branch & year and click "Check Status".</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <footer class="app-footer">
+    <div class="container text-center">
+      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    $(document).ready(function() {
+      initAdminAllotment();
+    });
+  </script>
+</body>
+</html>

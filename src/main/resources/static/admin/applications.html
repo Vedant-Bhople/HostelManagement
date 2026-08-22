@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manage Applications - HMS Admin</title>
+
+  <!-- Bootstrap 3 CSS -->
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-custom navbar-static-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+        </button>
+        <a class="navbar-brand" href="dashboard.html">
+          <span class="glyphicon glyphicon-lock"></span> HMS Admin Console
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="dashboard.html"><span class="glyphicon glyphicon-dashboard"></span> Dashboard</a></li>
+          <li class="active"><a href="applications.html"><span class="glyphicon glyphicon-folder-open"></span> Applications</a></li>
+          <li><a href="merit-list.html"><span class="glyphicon glyphicon-list-alt"></span> Merit List</a></li>
+          <li><a href="allotment.html"><span class="glyphicon glyphicon-bed"></span> Allotment</a></li>
+          <li><a href="students.html"><span class="glyphicon glyphicon-user"></span> Students</a></li>
+          <li><a href="reports.html"><span class="glyphicon glyphicon-stats"></span> Reports</a></li>
+          <li><a href="#" id="btn-nav-logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container page-wrapper">
+
+    <!-- Page Header Box -->
+    <div class="page-header-box">
+      <h2>Hostel Admission Applications Management</h2>
+      <p>Review student applications, verify marks, and grant admission approvals.</p>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="panel panel-custom">
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-md-6 col-sm-12" style="margin-bottom: 10px;">
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-primary btn-app-filter active" data-status="ALL">All</button>
+              <button type="button" class="btn btn-default btn-app-filter" data-status="PENDING">Pending</button>
+              <button type="button" class="btn btn-default btn-app-filter" data-status="APPROVED">Approved</button>
+              <button type="button" class="btn btn-default btn-app-filter" data-status="REJECTED">Rejected</button>
+            </div>
+          </div>
+          <div class="col-md-6 col-sm-12">
+            <div class="input-group">
+              <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+              <input type="text" id="input-app-search" class="form-control input-sm" placeholder="Search by student name, enrollment no, branch...">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Applications Table -->
+    <div class="panel panel-custom">
+      <div class="panel-heading">
+        <h3 class="panel-title"><span class="glyphicon glyphicon-th-list"></span> Submitted Applications List</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-custom table-hover">
+          <thead>
+            <tr>
+              <th>App ID</th>
+              <th>Student Name</th>
+              <th>Gender</th>
+              <th>Enrollment</th>
+              <th>Branch / Year</th>
+              <th>Category</th>
+              <th>Aggregate %</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="applications-tbody">
+            <tr>
+              <td colspan="9" class="text-center py-4">Loading applications...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="app-footer">
+    <div class="container text-center">
+      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    $(document).ready(function() {
+      initAdminApplications();
+    });
+  </script>
+</body>
+</html>

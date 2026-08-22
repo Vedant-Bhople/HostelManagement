@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hostel Management System - Government Polytechnic Murtizapur</title>
+
+  <!-- Bootstrap 3 CSS -->
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-custom navbar-static-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse"
+          aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          <span class="glyphicon glyphicon-home"></span> NIVASA - Hostel Management System
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li class="active"><a href="index.html">Home</a></li>
+          <li><a href="student/login.html"><span class="glyphicon glyphicon-user"></span> Student Login</a></li>
+          <li><a href="student/register.html"><span class="glyphicon glyphicon-pencil"></span> Student Register</a></li>
+          <li><a href="admin/login.html"><span class="glyphicon glyphicon-lock"></span> Admin Login</a></li>
+          <li><a href="admin/register.html"><span class="glyphicon glyphicon-shield"></span> Admin Register</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <h1>Campus Hostel Admission Portal</h1>
+      <p>Official Online Admission, Merit Ranking & Quota-Based Seat Allotment System</p>
+      <div style="margin-top: 30px;">
+        <a href="student/login.html" class="btn btn-primary-custom btn-lg"
+          style="margin-right: 12px; padding: 12px 28px; font-size: 16px;">
+          <span class="glyphicon glyphicon-log-in"></span> Student Login
+        </a>
+        <a href="student/register.html" class="btn btn-success-custom btn-lg"
+          style="padding: 12px 28px; font-size: 16px;">
+          <span class="glyphicon glyphicon-plus"></span> New Student Registration
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <div class="container page-wrapper">
+
+    <!-- Highlights & Key Features -->
+    <div class="row">
+      <div class="col-md-3 col-sm-6">
+        <div class="feature-box">
+          <div class="feature-icon">
+            <span class="glyphicon glyphicon-edit"></span>
+          </div>
+          <h4>Online Application</h4>
+          <p>Submit your admission form with academic scores, ATKT details, and reservation categories online.</p>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="feature-box">
+          <div class="feature-icon">
+            <span class="glyphicon glyphicon-folder-open"></span>
+          </div>
+          <h4>Document Verification</h4>
+          <p>Securely upload semester marksheets, admission receipts, photos, and CAP certificates for verification.</p>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="feature-box">
+          <div class="feature-icon">
+            <span class="glyphicon glyphicon-stats"></span>
+          </div>
+          <h4>Automated Merit List</h4>
+          <p>Fair, transparent merit list generation sorted purely by academic aggregate marks and quota rules.</p>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6">
+        <div class="feature-box">
+          <div class="feature-icon">
+            <span class="glyphicon glyphicon-bed"></span>
+          </div>
+          <h4>Seat Allotment</h4>
+          <p>Instant seat allotment across 210 hostel seats with online accept and surrender workflows.</p>
+        </div>
+      </div>
+    </div>
+
+    <hr style="border-color: #e2e8f0; margin: 40px 0;">
+
+    <!-- Admission Workflow Guide -->
+    <div class="row">
+      <div class="col-md-12 text-center" style="margin-bottom: 30px;">
+        <h2 style="font-weight: 800; color: #0f172a;">Hostel Admission Process</h2>
+        <p class="text-muted" style="font-size: 16px;">Follow these simple steps to secure your hostel accommodation</p>
+      </div>
+
+      <div class="col-md-10 col-md-offset-1">
+        <div class="row text-center">
+          <div class="col-sm-2 col-xs-6" style="margin-bottom: 20px;">
+            <div
+              style="font-size: 28px; font-weight: 800; color: #1e40af; background: #eff6ff; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin: 0 auto 10px auto;">
+              1</div>
+            <h5 style="font-weight: 700;">Register</h5>
+            <p class="small text-muted">Create your student account</p>
+          </div>
+          <div class="col-sm-2 col-xs-6" style="margin-bottom: 20px;">
+            <div
+              style="font-size: 28px; font-weight: 800; color: #1e40af; background: #eff6ff; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin: 0 auto 10px auto;">
+              2</div>
+            <h5 style="font-weight: 700;">Apply</h5>
+            <p class="small text-muted">Fill personal & marks details</p>
+          </div>
+          <div class="col-sm-2 col-xs-6" style="margin-bottom: 20px;">
+            <div
+              style="font-size: 28px; font-weight: 800; color: #1e40af; background: #eff6ff; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin: 0 auto 10px auto;">
+              3</div>
+            <h5 style="font-weight: 700;">Upload</h5>
+            <p class="small text-muted">Upload verification documents</p>
+          </div>
+          <div class="col-sm-2 col-xs-6" style="margin-bottom: 20px;">
+            <div
+              style="font-size: 28px; font-weight: 800; color: #1e40af; background: #eff6ff; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin: 0 auto 10px auto;">
+              4</div>
+            <h5 style="font-weight: 700;">Merit List</h5>
+            <p class="small text-muted">Check official merit rankings</p>
+          </div>
+          <div class="col-sm-2 col-xs-6" style="margin-bottom: 20px;">
+            <div
+              style="font-size: 28px; font-weight: 800; color: #1e40af; background: #eff6ff; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin: 0 auto 10px auto;">
+              5</div>
+            <h5 style="font-weight: 700;">Allotment</h5>
+            <p class="small text-muted">View allotted seat number</p>
+          </div>
+          <div class="col-sm-2 col-xs-6" style="margin-bottom: 20px;">
+            <div
+              style="font-size: 28px; font-weight: 800; color: #10b981; background: #ecfdf5; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; margin: 0 auto 10px auto;">
+              ✓</div>
+            <h5 style="font-weight: 700; color: #10b981;">Confirm</h5>
+            <p class="small text-muted">Accept seat online</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hostel Amenities / Info Box -->
+    <div class="panel panel-custom" style="margin-top: 40px;">
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h3 style="font-weight: 700; color: #1e3a8a; margin-top: 0;">Hostel Facilities & Infrastructure</h3>
+            <p style="color: #64748b; line-height: 1.6;">
+              Our campus hostel provides a secure, conducive, and modern residential environment for engineering and
+              diploma students. Complete with digital infrastructure, hygienic mess, and 24/7 security.
+            </p>
+            <ul style="color: #334155; line-height: 2;">
+              <li><strong>Boys & Girls Hostels:</strong> Separate dedicated hostel wings with warden supervision.</li>
+              <li><strong>Connectivity:</strong> High-speed campus Wi-Fi network and study halls.</li>
+              <li><strong>Security:</strong> 24/7 CCTV surveillance, biometric security, and security guards.</li>
+              <li><strong>Amenities:</strong> Solar water heating, RO drinking water, and indoor recreational rooms.
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-6 text-center">
+            <img src="images/hostel.jpg" alt="Hostel Building" class="img-responsive img-rounded"
+              style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-height: 280px; object-fit: cover;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container text-center">
+      <p style="margin-bottom: 5px;">&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+      <p class="small"><a href="student/login.html">Student Portal</a> | <a href="student/register.html">Student Register</a> | <a href="admin/login.html">Admin Console</a> | <a href="admin/register.html">Admin Register</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/common.js"></script>
+</body>
+
+</html>
