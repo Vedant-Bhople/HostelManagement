@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import com.resend.Resend;
 import com.resend.SendEmailRequest;
-import com.resend.SendEmailResponse;
 
 import com.hostel.model.Allotment;
 import com.hostel.model.Application;
@@ -30,6 +29,7 @@ public class EmailService {
     @Value("${EMAIL_FROM:onboarding@resend.dev}")
     private String fromEmail;
 
+
     // =====================================================
     // GENERIC SEND EMAIL METHOD
     // =====================================================
@@ -41,8 +41,7 @@ public class EmailService {
 
         if (to == null || to.trim().isEmpty()) {
 
-            logger.warn(
-                    "Cannot send email: Recipient address is empty.");
+            logger.warn("Cannot send email: Recipient address is empty.");
 
             return false;
         }
@@ -66,14 +65,13 @@ public class EmailService {
                             .html(htmlMessage)
                             .build();
 
-            SendEmailResponse response =
-                    resend.emails().send(request);
+            // Send email
+            resend.emails().send(request);
 
             logger.info(
-                    "Email successfully sent to: {} | Subject: {} | ID: {}",
+                    "Email successfully sent to {} | Subject: {}",
                     to,
-                    subject,
-                    response.getId()
+                    subject
             );
 
             return true;
@@ -91,6 +89,7 @@ public class EmailService {
             return false;
         }
     }
+
 
     // =====================================================
     // HTML ESCAPE
@@ -110,8 +109,9 @@ public class EmailService {
                 .replace("'", "&#39;");
     }
 
+
     // =====================================================
-    // 1. APPLICATION APPROVED EMAIL
+    // APPLICATION APPROVED EMAIL
     // =====================================================
 
     public void sendApplicationApprovedEmail(
@@ -178,11 +178,8 @@ public class EmailService {
 
                 + "--------------------------------------------------\n\n"
 
-                + "Next Steps:\n"
                 + "Please login to your Student Portal to check "
-                + "your application status.\n"
-                + "Stay tuned for the official Merit List "
-                + "publication and Seat Allotment.\n\n"
+                + "your application status.\n\n"
 
                 + "Portal Link: YOUR_RENDER_URL/student/login.html\n\n"
 
@@ -197,8 +194,9 @@ public class EmailService {
         );
     }
 
+
     // =====================================================
-    // 2. APPLICATION REJECTED EMAIL
+    // APPLICATION REJECTED EMAIL
     // =====================================================
 
     public void sendApplicationRejectedEmail(
@@ -265,10 +263,8 @@ public class EmailService {
 
                 + "--------------------------------------------------\n\n"
 
-                + "If you need further clarification or wish to "
-                + "rectify your details, please contact the "
-                + "Hostel Administration Office or log in to "
-                + "your Student Dashboard.\n\n"
+                + "Please contact the Hostel Administration Office "
+                + "for further clarification.\n\n"
 
                 + "Portal Link: YOUR_RENDER_URL/student/login.html\n\n"
 
@@ -283,8 +279,9 @@ public class EmailService {
         );
     }
 
+
     // =====================================================
-    // 3. MERIT LIST PUBLISHED EMAIL
+    // MERIT LIST PUBLISHED EMAIL
     // =====================================================
 
     public void sendMeritListPublishedEmail(
@@ -347,11 +344,10 @@ public class EmailService {
                 "Dear " + studentName + ",\n\n"
 
                 + "The official Hostel Admission Merit List "
-                + "for " + branch + " - Year " + year
-                + " has been PUBLISHED.\n\n"
+                + "has been PUBLISHED.\n\n"
 
                 + "--------------------------------------------------\n"
-                + "YOUR MERIT RANKING:\n"
+                + "YOUR MERIT DETAILS:\n"
                 + "--------------------------------------------------\n"
 
                 + "Student Name   : " + studentName + "\n"
@@ -374,8 +370,7 @@ public class EmailService {
                 + "--------------------------------------------------\n\n"
 
                 + "Please login to your Student Portal to view "
-                + "the full merit rankings and monitor upcoming "
-                + "seat allotment rounds.\n\n"
+                + "the full merit list.\n\n"
 
                 + "Portal Link: YOUR_RENDER_URL/student/merit-list.html\n\n"
 
@@ -390,8 +385,9 @@ public class EmailService {
         );
     }
 
+
     // =====================================================
-    // 4. HOSTEL SEAT ALLOTMENT EMAIL
+    // HOSTEL SEAT ALLOTMENT EMAIL
     // =====================================================
 
     public void sendAllotmentEmail(
@@ -496,10 +492,8 @@ public class EmailService {
 
                 + "--------------------------------------------------\n\n"
 
-                + "Action Required:\n"
                 + "Please login to your Student Dashboard to "
-                + "ACCEPT your allotted seat and complete the "
-                + "admission verification.\n\n"
+                + "check your allotment details.\n\n"
 
                 + "Portal Link: YOUR_RENDER_URL/student/allotment.html\n\n"
 
