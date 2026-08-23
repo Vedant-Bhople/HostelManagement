@@ -797,14 +797,6 @@ function initAdminStudents() {
   });
 
   // Modal Email Form Submission
-  $('#form-send-student-email').on('submit', function (e) {
-    e.preventDefault();
-    const to = $('#email-to').val().trim();
-    const subject = $('#email-subject').val().trim();
-    const message = $('#email-message').val().trim();
-
-    if (!to || !subject || !message) {
-      showAlert('#modal-email-alert', 'Please fill in all email fields.', 'warning');
       return;
     }
 
@@ -835,13 +827,6 @@ function loadStudentsDirectory() {
     });
 }
 
-function openStudentEmailModal(email, name) {
-  $('#modal-email-alert').empty();
-  $('#email-to').val(email || '');
-  $('#email-subject').val(`Notice: Campus Hostel Admission (${name || 'Student'})`);
-  $('#email-message').val(`Dear ${name || 'Student'},\n\nThis is an official communication regarding your hostel admission application.\n\nRegards,\nHostel Warden Office`);
-  $('#modal-send-email').modal('show');
-}
 
 function filterStudentsDirectory() {
   let list = cachedStudents;
