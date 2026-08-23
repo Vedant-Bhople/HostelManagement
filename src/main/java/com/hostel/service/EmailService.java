@@ -31,7 +31,7 @@ public class EmailService {
 
 
     // =====================================================
-    // GENERIC SEND EMAIL METHOD
+    // GENERIC SEND EMAIL
     // =====================================================
 
     public boolean sendEmail(
@@ -42,6 +42,13 @@ public class EmailService {
         if (to == null || to.trim().isEmpty()) {
 
             logger.warn("Cannot send email: Recipient address is empty.");
+
+            return false;
+        }
+
+        if (resendApiKey == null || resendApiKey.trim().isEmpty()) {
+
+            logger.error("RESEND_API_KEY is not configured.");
 
             return false;
         }
@@ -109,7 +116,7 @@ public class EmailService {
 
 
     // =====================================================
-    // APPLICATION APPROVED EMAIL
+    // APPLICATION APPROVED
     // =====================================================
 
     public void sendApplicationApprovedEmail(
@@ -164,7 +171,7 @@ public class EmailService {
                 + "Application has been APPROVED.\n\n"
 
                 + "--------------------------------------------------\n"
-                + "APPLICATION DETAILS:\n"
+                + "APPLICATION DETAILS\n"
                 + "--------------------------------------------------\n"
 
                 + "Student Name   : " + studentName + "\n"
@@ -194,7 +201,7 @@ public class EmailService {
 
 
     // =====================================================
-    // APPLICATION REJECTED EMAIL
+    // APPLICATION REJECTED
     // =====================================================
 
     public void sendApplicationRejectedEmail(
@@ -249,7 +256,7 @@ public class EmailService {
                 + "Admission Application has been REJECTED.\n\n"
 
                 + "--------------------------------------------------\n"
-                + "APPLICATION DETAILS:\n"
+                + "APPLICATION DETAILS\n"
                 + "--------------------------------------------------\n"
 
                 + "Student Name   : " + studentName + "\n"
@@ -279,7 +286,7 @@ public class EmailService {
 
 
     // =====================================================
-    // MERIT LIST PUBLISHED EMAIL
+    // MERIT LIST PUBLISHED
     // =====================================================
 
     public void sendMeritListPublishedEmail(
@@ -345,13 +352,14 @@ public class EmailService {
                 + "has been PUBLISHED.\n\n"
 
                 + "--------------------------------------------------\n"
-                + "YOUR MERIT DETAILS:\n"
+                + "YOUR MERIT DETAILS\n"
                 + "--------------------------------------------------\n"
 
                 + "Student Name   : " + studentName + "\n"
                 + "Enrollment No  : " + enrollmentNo + "\n"
                 + "Branch / Year  : " + branch
                 + " / Year " + year + "\n"
+
                 + "Merit Rank     : #"
                 + (meritRank != null
                 ? meritRank
@@ -385,7 +393,7 @@ public class EmailService {
 
 
     // =====================================================
-    // HOSTEL SEAT ALLOTMENT EMAIL
+    // HOSTEL SEAT ALLOTMENT
     // =====================================================
 
     public void sendAllotmentEmail(
@@ -465,7 +473,7 @@ public class EmailService {
                 + "ALLOTTED successfully.\n\n"
 
                 + "--------------------------------------------------\n"
-                + "SEAT ALLOTMENT DETAILS:\n"
+                + "SEAT ALLOTMENT DETAILS\n"
                 + "--------------------------------------------------\n"
 
                 + "Student Name       : " + studentName + "\n"
