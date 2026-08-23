@@ -156,20 +156,36 @@ public class AllotmentService {
         // SAVE ALLOTMENTS + WAITING LIST
         // =====================================================
 
-        List<Allotment> savedAllotments = allotmentRepository.saveAll(
-                allotments
-        );
+        List<Allotment> savedAllotments =
+                allotmentRepository.saveAll(
+                        allotments
+                );
 
-        // Send Email Notifications for allotted students (safe and non-blocking)
+
+        // =====================================================
+        // SEND EMAIL NOTIFICATIONS
+        // =====================================================
+
         try {
+
             for (Allotment item : savedAllotments) {
-                if ("ALLOTTED".equalsIgnoreCase(item.getAllotmentStatus())) {
+
+                if ("ALLOTTED".equalsIgnoreCase(
+                        item.getAllotmentStatus())) {
+
                     emailService.sendAllotmentEmail(item);
                 }
             }
+
         } catch (Exception e) {
-            // Handled inside EmailService
+
+            // Email failure should not stop allotment
+            System.out.println(
+                    "Email notification failed: "
+                    + e.getMessage()
+            );
         }
+
 
         return savedAllotments;
     }
@@ -179,12 +195,22 @@ public class AllotmentService {
     // BOYS ALLOTMENT
     // =====================================================
     //
+    // IMPORTANT ALLOCATION LOGIC
+    //
+    // OPEN = 7
     // SC   = 1
     // ST   = 1
     // OBC  = 2
-    // OPEN = 7
     //
     // TOTAL = 11
+    //
+    // OPEN SEATS ARE ALLOCATED FIRST BY OVERALL MERIT.
+    //
+    // SC/ST/OBC STUDENTS CAN ALSO GET OPEN SEATS.
+    //
+    // AFTER OPEN SEATS ARE ALLOCATED,
+    // RESERVED SEATS ARE GIVEN TO REMAINING
+    // ELIGIBLE STUDENTS OF THAT CATEGORY.
     // =====================================================
 
     private void generateBoysAllotment(
@@ -193,48 +219,60 @@ public class AllotmentService {
             String year,
             List<Allotment> allotments) {
 
-        List<MeritList> scStudents =
-                new ArrayList<>();
 
-        List<MeritList> stStudents =
-                new ArrayList<>();
+        // =====================================================
+        // GET ONLY PUBLISHED STUDENTS
+        // =====================================================
 
-        List<MeritList> obcStudents =
+        List<MeritList> publishedStudents =
                 new ArrayList<>();
-
-        List<MeritList> allStudents =
-                new ArrayList<>();
-
 
         for (MeritList merit : meritList) {
 
-            if (!merit.isPublished()) {
-                continue;
-            }
+            if (merit.isPublished()) {
 
-            allStudents.add(merit);
-
-            String category =
-                    normalizeCategory(
-                            merit.getMeritCategory()
-                    );
-
-            if ("SC".equals(category)) {
-
-                scStudents.add(merit);
-
-            } else if ("ST".equals(category)) {
-
-                stStudents.add(merit);
-
-            } else if ("OBC".equals(category)) {
-
-                obcStudents.add(merit);
+                publishedStudents.add(merit);
             }
         }
 
 
-        // SC = 1
+        // =====================================================
+        // STEP 1
+        // OPEN SEATS = 7
+        //
+        // Overall merit regardless of caste/category
+        // =====================================================
+
+        allotRemainingStudents(
+                publishedStudents,
+                7,
+                "OPEN",
+                "B",
+                branch,
+                year,
+                allotments
+        );
+
+
+        // =====================================================
+        // STEP 2
+        // SC RESERVED SEAT = 1
+        // =====================================================
+
+        List<MeritList> scStudents =
+                new ArrayList<>();
+
+        for (MeritList merit : publishedStudents) {
+
+            if (isCategory(
+                    merit,
+                    "SC")) {
+
+                scStudents.add(merit);
+            }
+        }
+
+
         allotCategory(
                 scStudents,
                 1,
@@ -246,7 +284,25 @@ public class AllotmentService {
         );
 
 
-        // ST = 1
+        // =====================================================
+        // STEP 3
+        // ST RESERVED SEAT = 1
+        // =====================================================
+
+        List<MeritList> stStudents =
+                new ArrayList<>();
+
+        for (MeritList merit : publishedStudents) {
+
+            if (isCategory(
+                    merit,
+                    "ST")) {
+
+                stStudents.add(merit);
+            }
+        }
+
+
         allotCategory(
                 stStudents,
                 1,
@@ -258,7 +314,25 @@ public class AllotmentService {
         );
 
 
-        // OBC = 2
+        // =====================================================
+        // STEP 4
+        // OBC RESERVED SEATS = 2
+        // =====================================================
+
+        List<MeritList> obcStudents =
+                new ArrayList<>();
+
+        for (MeritList merit : publishedStudents) {
+
+            if (isCategory(
+                    merit,
+                    "OBC")) {
+
+                obcStudents.add(merit);
+            }
+        }
+
+
         allotCategory(
                 obcStudents,
                 2,
@@ -268,41 +342,6 @@ public class AllotmentService {
                 year,
                 allotments
         );
-
-
-        // OPEN = 7
-        allotRemainingStudents(
-                allStudents,
-                7,
-                "OPEN",
-                "B",
-                branch,
-                year,
-                allotments
-        );
-
-
-        // =====================================================
-        // FALLBACK
-        // =====================================================
-
-        int totalSeats = 11;
-
-        if (allotments.size() < totalSeats) {
-
-            int remaining =
-                    totalSeats - allotments.size();
-
-            allotRemainingStudents(
-                    allStudents,
-                    remaining,
-                    "OPEN",
-                    "B",
-                    branch,
-                    year,
-                    allotments
-            );
-        }
     }
 
 
@@ -323,34 +362,56 @@ public class AllotmentService {
             String year,
             List<Allotment> allotments) {
 
-        List<MeritList> obcStudents =
-                new ArrayList<>();
 
-        List<MeritList> allStudents =
+        List<MeritList> publishedStudents =
                 new ArrayList<>();
-
 
         for (MeritList merit : meritList) {
 
-            if (!merit.isPublished()) {
-                continue;
+            if (merit.isPublished()) {
+
+                publishedStudents.add(merit);
             }
+        }
 
-            allStudents.add(merit);
 
-            String category =
-                    normalizeCategory(
-                            merit.getMeritCategory()
-                    );
+        // =====================================================
+        // STEP 1
+        // OPEN = 1
+        //
+        // Overall merit
+        // =====================================================
 
-            if ("OBC".equals(category)) {
+        allotRemainingStudents(
+                publishedStudents,
+                1,
+                "OPEN",
+                "G",
+                branch,
+                year,
+                allotments
+        );
+
+
+        // =====================================================
+        // STEP 2
+        // OBC = 1
+        // =====================================================
+
+        List<MeritList> obcStudents =
+                new ArrayList<>();
+
+        for (MeritList merit : publishedStudents) {
+
+            if (isCategory(
+                    merit,
+                    "OBC")) {
 
                 obcStudents.add(merit);
             }
         }
 
 
-        // OBC = 1
         allotCategory(
                 obcStudents,
                 1,
@@ -362,27 +423,38 @@ public class AllotmentService {
         );
 
 
-        // OPEN = 1
-        allotRemainingStudents(
-                allStudents,
-                1,
-                "OPEN",
-                "G",
-                branch,
-                year,
-                allotments
-        );
-
-
+        // =====================================================
+        // STEP 3
         // ALL CASTE = 1
+        // =====================================================
+
         allotRemainingStudents(
-                allStudents,
+                publishedStudents,
                 1,
                 "ALL CASTE",
                 "G",
                 branch,
                 year,
                 allotments
+        );
+    }
+
+
+    // =====================================================
+    // CHECK CATEGORY
+    // =====================================================
+
+    private boolean isCategory(
+            MeritList merit,
+            String requiredCategory) {
+
+        String category =
+                normalizeCategory(
+                        merit.getMeritCategory()
+                );
+
+        return requiredCategory.equalsIgnoreCase(
+                category
         );
     }
 
@@ -400,13 +472,21 @@ public class AllotmentService {
             String year,
             List<Allotment> allotments) {
 
+
         int seatsGiven = 0;
+
 
         for (MeritList merit : students) {
 
             if (seatsGiven >= numberOfSeats) {
+
                 break;
             }
+
+
+            // =================================================
+            // DON'T ALLOT SAME STUDENT TWICE
+            // =================================================
 
             if (isAlreadyAllotted(
                     merit,
@@ -414,6 +494,7 @@ public class AllotmentService {
 
                 continue;
             }
+
 
             Allotment allotment =
                     createAllotment(
@@ -425,7 +506,11 @@ public class AllotmentService {
                             allotments.size() + 1
                     );
 
-            allotments.add(allotment);
+
+            allotments.add(
+                    allotment
+            );
+
 
             seatsGiven++;
         }
@@ -433,7 +518,7 @@ public class AllotmentService {
 
 
     // =====================================================
-    // REMAINING STUDENTS BY MERIT
+    // ALLOT REMAINING STUDENTS BY OVERALL MERIT
     // =====================================================
 
     private void allotRemainingStudents(
@@ -445,13 +530,21 @@ public class AllotmentService {
             String year,
             List<Allotment> allotments) {
 
+
         int seatsGiven = 0;
+
 
         for (MeritList merit : students) {
 
             if (seatsGiven >= numberOfSeats) {
+
                 break;
             }
+
+
+            // =================================================
+            // DON'T ALLOT SAME STUDENT TWICE
+            // =================================================
 
             if (isAlreadyAllotted(
                     merit,
@@ -459,6 +552,7 @@ public class AllotmentService {
 
                 continue;
             }
+
 
             Allotment allotment =
                     createAllotment(
@@ -470,7 +564,11 @@ public class AllotmentService {
                             allotments.size() + 1
                     );
 
-            allotments.add(allotment);
+
+            allotments.add(
+                    allotment
+            );
+
 
             seatsGiven++;
         }
@@ -487,11 +585,18 @@ public class AllotmentService {
             String year,
             List<Allotment> allotments) {
 
+
         for (MeritList merit : meritList) {
 
             if (!merit.isPublished()) {
+
                 continue;
             }
+
+
+            // =================================================
+            // ALREADY ALLOTTED
+            // =================================================
 
             if (isAlreadyAllotted(
                     merit,
@@ -500,10 +605,13 @@ public class AllotmentService {
                 continue;
             }
 
+
             String hostelCode =
                     "BOYS".equalsIgnoreCase(
                             merit.getGender()
-                    ) ? "B" : "G";
+                    )
+                    ? "B"
+                    : "G";
 
 
             Allotment waiting =
@@ -517,23 +625,31 @@ public class AllotmentService {
                     );
 
 
-            // Important
+            // =================================================
+            // WAITING STATUS
+            // =================================================
+
             waiting.setAllotmentStatus(
                     "WAITING"
             );
 
 
-            // Waiting students don't have actual seat
+            // =================================================
+            // NO ACTUAL SEAT FOR WAITING STUDENT
+            // =================================================
+
             waiting.setSeatNumber(
-                    "WAITING-" +
-                    String.format(
+                    "WAITING-"
+                    + String.format(
                             "%02d",
                             allotments.size() + 1
                     )
             );
 
 
-            allotments.add(waiting);
+            allotments.add(
+                    waiting
+            );
         }
     }
 
@@ -546,16 +662,20 @@ public class AllotmentService {
             MeritList merit,
             List<Allotment> allotments) {
 
+
         for (Allotment allotment : allotments) {
 
             if (allotment.getMeritList() != null
                     && allotment.getMeritList()
                             .getId()
-                            .equals(merit.getId())) {
+                            .equals(
+                                    merit.getId()
+                            )) {
 
                 return true;
             }
         }
+
 
         return false;
     }
@@ -573,23 +693,33 @@ public class AllotmentService {
             String year,
             int seatNumber) {
 
+
         Allotment allotment =
                 new Allotment();
 
 
-        // Application
+        // =====================================================
+        // APPLICATION
+        // =====================================================
+
         allotment.setApplication(
                 merit.getApplication()
         );
 
 
-        // Merit
+        // =====================================================
+        // MERIT
+        // =====================================================
+
         allotment.setMeritList(
                 merit
         );
 
 
-        // Hostel
+        // =====================================================
+        // HOSTEL
+        // =====================================================
+
         if ("B".equalsIgnoreCase(
                 hostelCode)) {
 
@@ -605,43 +735,61 @@ public class AllotmentService {
         }
 
 
-        // Basic information
+        // =====================================================
+        // BASIC INFORMATION
+        // =====================================================
+
         allotment.setGender(
                 merit.getGender()
         );
 
+
         allotment.setBranch(
                 branch
         );
+
 
         allotment.setYear(
                 year
         );
 
 
-        // Original category
+        // =====================================================
+        // ORIGINAL CATEGORY
+        // =====================================================
+
         allotment.setCategory(
                 merit.getCategory()
         );
 
 
-        // Allotment category
+        // =====================================================
+        // ALLOTMENT CATEGORY
+        // =====================================================
+
         allotment.setAllotmentCategory(
                 allotmentCategory
         );
 
 
-        // Merit
+        // =====================================================
+        // MERIT INFORMATION
+        // =====================================================
+
         allotment.setMeritRank(
                 merit.getMeritRank()
         );
+
 
         allotment.setAggregate(
                 merit.getAggregate()
         );
 
 
-        // Seat number
+        // =====================================================
+        // SEAT NUMBER
+        // =====================================================
+
         allotment.setSeatNumber(
                 generateSeatNumber(
                         hostelCode,
@@ -653,7 +801,10 @@ public class AllotmentService {
         );
 
 
-        // Initial status
+        // =====================================================
+        // INITIAL STATUS
+        // =====================================================
+
         allotment.setAllotmentStatus(
                 "ALLOTTED"
         );
@@ -674,8 +825,10 @@ public class AllotmentService {
             String category,
             int seatNumber) {
 
+
         String branchCode =
                 getBranchCode(branch);
+
 
         String categoryCode =
                 getCategoryCode(category);
@@ -703,7 +856,9 @@ public class AllotmentService {
     private String getCategoryCode(
             String category) {
 
+
         if (category == null) {
+
             return "GEN";
         }
 
@@ -714,25 +869,39 @@ public class AllotmentService {
                 .toUpperCase()
         ) {
 
+
             case "SC":
+
                 return "SC";
 
+
             case "ST":
+
                 return "ST";
 
+
             case "OBC":
+
                 return "OBC";
 
+
             case "OPEN":
+
                 return "OP";
 
+
             case "ALL CASTE":
+
                 return "ALL";
 
+
             case "WAITING":
+
                 return "WAIT";
 
+
             default:
+
                 return "GEN";
         }
     }
@@ -744,6 +913,7 @@ public class AllotmentService {
 
     private String normalizeCategory(
             String category) {
+
 
         if (category == null
                 || category.trim().isEmpty()) {
@@ -758,7 +928,10 @@ public class AllotmentService {
                 .toUpperCase();
 
 
-        // ST group
+        // =====================================================
+        // ST GROUP
+        // =====================================================
+
         if (value.equals("ST")
                 || value.equals("VJ-A")
                 || value.equals("NT-B")
@@ -769,19 +942,30 @@ public class AllotmentService {
         }
 
 
+        // =====================================================
         // SC
+        // =====================================================
+
         if (value.equals("SC")) {
+
             return "SC";
         }
 
 
+        // =====================================================
         // OBC
+        // =====================================================
+
         if (value.equals("OBC")) {
+
             return "OBC";
         }
 
 
-        // OPEN + OTHER
+        // =====================================================
+        // OPEN / OTHER
+        // =====================================================
+
         return "OPEN";
     }
 
@@ -793,7 +977,9 @@ public class AllotmentService {
     private String getBranchCode(
             String branch) {
 
+
         if (branch == null) {
+
             return "OTHER";
         }
 
@@ -804,22 +990,34 @@ public class AllotmentService {
                 .toUpperCase()
         ) {
 
+
             case "COMPUTER":
+
                 return "COMP";
 
+
             case "MECHANICAL":
+
                 return "MECH";
 
+
             case "CIVIL":
+
                 return "CIVIL";
 
+
             case "ELECTRICAL":
+
                 return "ELEC";
 
+
             case "IT":
+
                 return "IT";
 
+
             default:
+
                 return "OTHER";
         }
     }
@@ -833,6 +1031,7 @@ public class AllotmentService {
             String gender,
             String branch,
             String year) {
+
 
         return allotmentRepository
                 .findByGenderAndBranchAndYearOrderByMeritRankAsc(
@@ -850,6 +1049,7 @@ public class AllotmentService {
     public List<Allotment> getStudentAllotments(
             Long userId) {
 
+
         return allotmentRepository
                 .findByApplication_User_Id(
                         userId
@@ -864,6 +1064,7 @@ public class AllotmentService {
     public Allotment acceptSeat(
             Long allotmentId) {
 
+
         Allotment allotment =
                 allotmentRepository
                 .findById(allotmentId)
@@ -874,6 +1075,10 @@ public class AllotmentService {
                 );
 
 
+        // =====================================================
+        // REJECTED
+        // =====================================================
+
         if ("REJECTED".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
 
@@ -882,6 +1087,10 @@ public class AllotmentService {
             );
         }
 
+
+        // =====================================================
+        // WAITING
+        // =====================================================
 
         if ("WAITING".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
@@ -892,6 +1101,10 @@ public class AllotmentService {
         }
 
 
+        // =====================================================
+        // ALREADY ACCEPTED
+        // =====================================================
+
         if ("ACCEPTED".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
 
@@ -900,6 +1113,10 @@ public class AllotmentService {
             );
         }
 
+
+        // =====================================================
+        // ACCEPT
+        // =====================================================
 
         allotment.setAllotmentStatus(
                 "ACCEPTED"
@@ -919,6 +1136,7 @@ public class AllotmentService {
     public Allotment rejectSeat(
             Long allotmentId) {
 
+
         Allotment allotment =
                 allotmentRepository
                 .findById(allotmentId)
@@ -929,6 +1147,10 @@ public class AllotmentService {
                 );
 
 
+        // =====================================================
+        // ACCEPTED
+        // =====================================================
+
         if ("ACCEPTED".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
 
@@ -937,6 +1159,10 @@ public class AllotmentService {
             );
         }
 
+
+        // =====================================================
+        // ALREADY REJECTED
+        // =====================================================
 
         if ("REJECTED".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
@@ -947,6 +1173,10 @@ public class AllotmentService {
         }
 
 
+        // =====================================================
+        // WAITING
+        // =====================================================
+
         if ("WAITING".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
 
@@ -955,6 +1185,10 @@ public class AllotmentService {
             );
         }
 
+
+        // =====================================================
+        // REJECT
+        // =====================================================
 
         allotment.setAllotmentStatus(
                 "REJECTED"
