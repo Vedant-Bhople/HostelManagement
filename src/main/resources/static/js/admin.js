@@ -868,32 +868,40 @@ function filterStudentsDirectory() {
   }
 
   if (list.length === 0) {
-    $('#students-tbody').html('<tr><td colspan="9" class="text-center py-4 text-muted">No students matching criteria.</td></tr>');
+    $('#students-tbody').html(
+      '<tr><td colspan="8" class="text-center py-4 text-muted">No students matching criteria.</td></tr>'
+    );
     return;
   }
 
   let html = '';
-  list.forEach(s => {
-    const studentEmail = (s.user && s.user.email) ? s.user.email : '';
-    const safeName = (s.fullName || s.enrollmentNumber || 'Student').replace(/'/g, "\\'");
-    const safeEmail = studentEmail.replace(/'/g, "\\'");
 
+  list.forEach(s => {
     html += `
       <tr>
         <td><strong>#${s.id}</strong></td>
         <td><strong>${s.fullName || '--'}</strong></td>
         <td>${s.enrollmentNumber || '--'}</td>
         <td>${s.gender || '--'}</td>
-        <td>${s.branch} (Y${s.year})</td>
-        <td><span class="label label-default">${s.category || '--'}</span></td>
-        <td>${s.aggregate ? s.aggregate.toFixed(2) + '%' : '--'}</td>
-        <td><span class="status-pill ${s.status === 'APPROVED' ? 'status-approved' : (s.status === 'REJECTED' ? 'status-rejected' : 'status-pending')}">${s.status || 'PENDING'}</span></td>
-        <td class="text-right">
-          ${studentEmail ? `
-            <button class="btn btn-default btn-xs" onclick="openStudentEmailModal('${safeEmail}', '${safeName}')" title="Send direct email to student">
-              <span class="glyphicon glyphicon-envelope"></span> Email
-            </button>
-          ` : '<span class="text-muted small">No Email</span>'}
+        <td>${s.branch || '--'} (Y${s.year || '--'})</td>
+        <td>
+          <span class="label label-default">
+            ${s.category || '--'}
+          </span>
+        </td>
+        <td>
+          ${s.aggregate ? s.aggregate.toFixed(2) + '%' : '--'}
+        </td>
+        <td>
+          <span class="status-pill ${
+            s.status === 'APPROVED'
+              ? 'status-approved'
+              : (s.status === 'REJECTED'
+                ? 'status-rejected'
+                : 'status-pending')
+          }">
+            ${s.status || 'PENDING'}
+          </span>
         </td>
       </tr>
     `;
@@ -901,7 +909,6 @@ function filterStudentsDirectory() {
 
   $('#students-tbody').html(html);
 }
-
 // =========================================================================
 // 8. ADMIN REPORTS & BREAKDOWNS
 // =========================================================================
