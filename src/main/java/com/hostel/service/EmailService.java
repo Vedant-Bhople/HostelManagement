@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.resend.Resend;
-import com.resend.SendEmailRequest;
+import com.resend.services.emails.model.CreateEmailOptions;
 
 import com.hostel.model.Allotment;
 import com.hostel.model.Application;
@@ -48,8 +48,7 @@ public class EmailService {
 
         try {
 
-            Resend resend =
-                    new Resend(resendApiKey);
+            Resend resend = new Resend(resendApiKey);
 
             String htmlMessage =
                     "<div style=\"font-family:Arial,sans-serif;"
@@ -57,16 +56,15 @@ public class EmailService {
                     + escapeHtml(messageText)
                     + "</div>";
 
-            SendEmailRequest request =
-                    SendEmailRequest.builder()
+            CreateEmailOptions params =
+                    CreateEmailOptions.builder()
                             .from(fromEmail)
                             .to(to.trim())
                             .subject(subject)
                             .html(htmlMessage)
                             .build();
 
-            // Send email
-            resend.emails().send(request);
+            resend.emails().send(params);
 
             logger.info(
                     "Email successfully sent to {} | Subject: {}",
