@@ -1,14 +1,21 @@
 package com.hostel.service;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hostel.model.Application;
@@ -25,9 +32,20 @@ public class DocumentService {
     @Autowired
     private ApplicationRepository applicationRepository;
 
-    private final String UPLOAD_DIR = "uploads/";
+    @Value("${SUPABASE_URL}")
+    private String supabaseUrl;
 
-    // Upload Document
+    @Value("${SUPABASE_SERVICE_KEY}")
+    private String supabaseServiceKey;
+
+    private final String BUCKET_NAME = "documents";
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    // =====================================================
+    // UPLOAD DOCUMENT
+    // =====================================================
+
     public Document uploadDocument(
             Long applicationId,
             String documentType,
@@ -42,14 +60,13 @@ public class DocumentService {
             throw new RuntimeException("Please select a file");
         }
 
-        // Allowed file types
-        String fileName = file.getOriginalFilename();
+        String originalFileName = file.getOriginalFilename();
 
-        if (fileName == null) {
+        if (originalFileName == null || originalFileName.trim().isEmpty()) {
             throw new RuntimeException("Invalid file");
         }
 
-        String lowerName = fileName.toLowerCase();
+        String lowerName = originalFileName.toLowerCase();
 
         if (!(lowerName.endsWith(".pdf")
                 || lowerName.endsWith(".jpg")
@@ -57,40 +74,80 @@ public class DocumentService {
                 || lowerName.endsWith(".png"))) {
 
             throw new RuntimeException(
-                    "Only PDF, JPG, JPEG and PNG files are allowed"
-            );
+                    "Only PDF, JPG, JPEG and PNG files are allowed");
         }
 
-        // Create uploads folder
-        File directory = new File(UPLOAD_DIR);
+        // Create unique file name
+        String cleanFileName =
+                Paths.get(originalFileName)
+                .getFileName()
+                .toString()
+                .replaceAll("[^a-zA-Z0-9._-]", "_");
 
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
+        String storagePath =
+                UUID.randomUUID() + "_" + cleanFileName;
 
-        // Unique file name
-        String uniqueFileName =
-                System.currentTimeMillis() + "_" + fileName;
+        // Supabase Storage upload URL
+        String uploadUrl =
+                supabaseUrl
+                + "/storage/v1/object/"
+                + BUCKET_NAME
+                + "/"
+                + storagePath;
 
-        Path path = Paths.get(
-                UPLOAD_DIR + uniqueFileName
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("apikey", supabaseServiceKey);
+        headers.set(
+                "Authorization",
+                "Bearer " + supabaseServiceKey
         );
 
-        Files.copy(file.getInputStream(), path);
+        MediaType contentType =
+                file.getContentType() != null
+                ? MediaType.parseMediaType(file.getContentType())
+                : MediaType.APPLICATION_OCTET_STREAM;
 
-        // Save document information
+        headers.setContentType(contentType);
+
+        // Prevent overwriting another file
+        headers.set("x-upsert", "false");
+
+        HttpEntity<byte[]> request =
+                new HttpEntity<>(file.getBytes(), headers);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        uploadUrl,
+                        HttpMethod.POST,
+                        request,
+                        String.class
+                );
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException(
+                    "Failed to upload file to Supabase Storage");
+        }
+
+        // Save document information in PostgreSQL
         Document document = new Document();
 
         document.setApplication(application);
         document.setDocumentType(documentType);
-        document.setFileName(fileName);
-        document.setFilePath(path.toString());
+        document.setFileName(originalFileName);
+
+        // Store Supabase Storage path instead of Render local path
+        document.setFilePath(storagePath);
+
         document.setVerificationStatus("PENDING");
 
         return documentRepository.save(document);
     }
 
-    // Get documents of application
+    // =====================================================
+    // GET DOCUMENTS OF APPLICATION
+    // =====================================================
+
     public List<Document> getDocuments(Long applicationId) {
 
         Application application =
@@ -101,7 +158,10 @@ public class DocumentService {
         return documentRepository.findByApplication(application);
     }
 
-    // Verify document
+    // =====================================================
+    // VERIFY DOCUMENT
+    // =====================================================
+
     public Document verifyDocument(Long id) {
 
         Document document =
@@ -114,7 +174,10 @@ public class DocumentService {
         return documentRepository.save(document);
     }
 
-    // Reject document
+    // =====================================================
+    // REJECT DOCUMENT
+    // =====================================================
+
     public Document rejectDocument(
             Long id,
             String reason) {
@@ -130,23 +193,67 @@ public class DocumentService {
 
         return documentRepository.save(document);
     }
- // =====================================================
- // VIEW / DOWNLOAD DOCUMENT
- // =====================================================
 
- public org.springframework.core.io.Resource getDocumentFile(Long id) {
+    // =====================================================
+    // VIEW / DOWNLOAD DOCUMENT
+    // =====================================================
 
-     Document document =
-             documentRepository.findById(id)
-             .orElseThrow(() ->
-                     new RuntimeException("Document not found"));
+    public Resource getDocumentFile(Long id) {
 
-     Path path = Paths.get(document.getFilePath());
+        Document document =
+                documentRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Document not found"));
 
-     if (!Files.exists(path)) {
-         throw new RuntimeException("File not found on server");
-     }
+        String storagePath = document.getFilePath();
 
-     return new org.springframework.core.io.FileSystemResource(path);
- }
+        if (storagePath == null || storagePath.trim().isEmpty()) {
+            throw new RuntimeException("Document file path is missing");
+        }
+
+        // Supabase Storage download URL
+        String downloadUrl =
+                supabaseUrl
+                + "/storage/v1/object/"
+                + BUCKET_NAME
+                + "/"
+                + storagePath;
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("apikey", supabaseServiceKey);
+
+        headers.set(
+                "Authorization",
+                "Bearer " + supabaseServiceKey
+        );
+
+        HttpEntity<Void> request =
+                new HttpEntity<>(headers);
+
+        ResponseEntity<byte[]> response =
+                restTemplate.exchange(
+                        downloadUrl,
+                        HttpMethod.GET,
+                        request,
+                        byte[].class
+                );
+
+        if (!response.getStatusCode().is2xxSuccessful()
+                || response.getBody() == null) {
+
+            throw new RuntimeException(
+                    "File not found in Supabase Storage");
+        }
+
+        byte[] fileBytes = response.getBody();
+
+        return new ByteArrayResource(fileBytes) {
+
+            @Override
+            public String getFilename() {
+                return document.getFileName();
+            }
+        };
+    }
 }
