@@ -25,6 +25,7 @@
           <span class="icon-bar" style="background-color: #fff;"></span>
           <span class="icon-bar" style="background-color: #fff;"></span>
         </button>
+
         <a class="navbar-brand" href="../index.html">
           <span class="glyphicon glyphicon-home"></span> Hostel Management
         </a>
@@ -43,52 +44,145 @@
 
   <div class="container page-wrapper">
     <div class="auth-box">
+
       <div class="text-center" style="margin-bottom: 20px;">
-        <img src="../images/logo.png" alt="Logo" style="width: 60px; height: 60px; border-radius: 8px; margin-bottom: 10px;">
+        <img src="../images/logo.png"
+             alt="Logo"
+             style="width: 60px; height: 60px; border-radius: 8px; margin-bottom: 10px;">
+
         <h2 class="auth-title">Create Student Account</h2>
-        <p class="auth-subtitle">Register to submit your online hostel admission application</p>
+
+        <p class="auth-subtitle">
+          Register to submit your online hostel admission application
+        </p>
       </div>
 
       <div id="alert-container"></div>
 
       <form id="form-student-register">
+
+        <!-- Full Name -->
         <div class="form-group">
-          <label for="reg-name"><span class="glyphicon glyphicon-user"></span> Full Name (as per college records) *</label>
-          <input type="text" class="form-control" id="reg-name" placeholder="e.g. Rahul Sharma" required>
+          <label for="reg-name">
+            <span class="glyphicon glyphicon-user"></span>
+            Full Name (as per college records) *
+          </label>
+
+          <input type="text"
+                 class="form-control"
+                 id="reg-name"
+                 placeholder="e.g. Rahul Sharma"
+                 required>
         </div>
 
+        <!-- Email -->
         <div class="form-group">
-          <label for="reg-email"><span class="glyphicon glyphicon-envelope"></span> Email Address *</label>
-          <input type="email" class="form-control" id="reg-email" placeholder="rahul@example.com" required>
+          <label for="reg-email">
+            <span class="glyphicon glyphicon-envelope"></span>
+            Email Address *
+          </label>
+
+          <input type="email"
+                 class="form-control"
+                 id="reg-email"
+                 placeholder="rahul@example.com"
+                 required>
         </div>
 
+        <!-- Create Password -->
         <div class="form-group">
-          <label for="reg-password"><span class="glyphicon glyphicon-lock"></span> Create Password *</label>
-          <input type="password" class="form-control" id="reg-password" placeholder="Minimum 6 characters" required>
+          <label for="reg-password">
+            <span class="glyphicon glyphicon-lock"></span>
+            Create Password *
+          </label>
+
+          <div class="input-group">
+
+            <input type="password"
+                   class="form-control"
+                   id="reg-password"
+                   placeholder="Minimum 6 characters"
+                   required>
+
+            <span class="input-group-btn">
+              <button type="button"
+                      class="btn btn-default toggle-password"
+                      data-target="reg-password"
+                      title="Show Password"
+                      style="height: 34px;">
+                <span class="glyphicon glyphicon-eye-open"></span>
+              </button>
+            </span>
+
+          </div>
         </div>
 
+        <!-- Confirm Password -->
         <div class="form-group">
-          <label for="reg-confirm-password"><span class="glyphicon glyphicon-lock"></span> Confirm Password *</label>
-          <input type="password" class="form-control" id="reg-confirm-password" placeholder="Re-enter password" required>
+          <label for="reg-confirm-password">
+            <span class="glyphicon glyphicon-lock"></span>
+            Confirm Password *
+          </label>
+
+          <div class="input-group">
+
+            <input type="password"
+                   class="form-control"
+                   id="reg-confirm-password"
+                   placeholder="Re-enter password"
+                   required>
+
+            <span class="input-group-btn">
+              <button type="button"
+                      class="btn btn-default toggle-password"
+                      data-target="reg-confirm-password"
+                      title="Show Password"
+                      style="height: 34px;">
+                <span class="glyphicon glyphicon-eye-open"></span>
+              </button>
+            </span>
+
+          </div>
         </div>
 
-        <button type="submit" id="btn-register" class="btn btn-success-custom btn-block" style="margin-top: 20px; padding: 10px; font-size: 15px;">
+        <!-- Register Button -->
+        <button type="submit"
+                id="btn-register"
+                class="btn btn-success-custom btn-block"
+                style="margin-top: 20px; padding: 10px; font-size: 15px;">
           Register Account
         </button>
+
       </form>
 
       <hr style="margin: 25px 0 15px 0;">
 
       <div class="text-center">
-        <p class="small text-muted">Already registered? <a href="login.html" style="font-weight: 600;">Sign in here</a></p>
-        <p class="small text-muted">Are you an administrator? <a href="../admin/login.html" style="font-weight: 600;">Admin Login</a> </p>
+
+        <p class="small text-muted">
+          Already registered?
+          <a href="login.html" style="font-weight: 600;">
+            Sign in here
+          </a>
+        </p>
+
+        <p class="small text-muted">
+          Are you an administrator?
+          <a href="../admin/login.html" style="font-weight: 600;">
+            Admin Login
+          </a>
+        </p>
+
       </div>
+
     </div>
   </div>
 
   <footer class="app-footer">
     <div class="container text-center">
-      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+      <p>
+        &copy; 2026 Hostel Management System. All Rights Reserved.
+      </p>
     </div>
   </footer>
 
@@ -96,10 +190,45 @@
   <script src="../js/bootstrap.min.js"></script>
   <script src="../js/common.js"></script>
   <script src="../js/student.js"></script>
+
   <script>
     $(document).ready(function() {
+
+      // Student Registration
       initStudentRegister();
+
+      // Show / Hide Password
+      $(".toggle-password").click(function() {
+
+        var button = $(this);
+        var passwordField = $("#" + button.data("target"));
+        var eyeIcon = button.find("span");
+
+        if (passwordField.attr("type") === "password") {
+
+          // Show password
+          passwordField.attr("type", "text");
+
+          eyeIcon.removeClass("glyphicon-eye-open");
+          eyeIcon.addClass("glyphicon-eye-close");
+
+          button.attr("title", "Hide Password");
+
+        } else {
+
+          // Hide password
+          passwordField.attr("type", "password");
+
+          eyeIcon.removeClass("glyphicon-eye-close");
+          eyeIcon.addClass("glyphicon-eye-open");
+
+          button.attr("title", "Show Password");
+        }
+
+      });
+
     });
   </script>
+
 </body>
 </html>
