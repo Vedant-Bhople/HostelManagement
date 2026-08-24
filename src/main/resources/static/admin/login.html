@@ -19,12 +19,16 @@
   <nav class="navbar navbar-custom navbar-static-top">
     <div class="container">
       <div class="navbar-header">
-        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+        <button type="button"
+                class="navbar-toggle collapsed"
+                data-toggle="collapse"
+                data-target="#navbar-collapse">
           <span class="sr-only">Toggle navigation</span>
           <span class="icon-bar" style="background-color: #fff;"></span>
           <span class="icon-bar" style="background-color: #fff;"></span>
           <span class="icon-bar" style="background-color: #fff;"></span>
         </button>
+
         <a class="navbar-brand" href="../index.html">
           <span class="glyphicon glyphicon-home"></span> Hostel Management
         </a>
@@ -34,52 +38,138 @@
         <ul class="nav navbar-nav navbar-right">
           <li><a href="../index.html">Home</a></li>
           <li><a href="../student/login.html">Student Portal</a></li>
-          <li class="active"><a href="login.html"><span class="glyphicon glyphicon-lock"></span> Admin Login</a></li>
+          <li class="active">
+            <a href="login.html">
+              <span class="glyphicon glyphicon-lock"></span> Admin Login
+            </a>
+          </li>
         </ul>
       </div>
     </div>
   </nav>
 
   <div class="container page-wrapper">
+
     <div class="auth-box" style="margin-top: 50px;">
+
       <div class="text-center" style="margin-bottom: 20px;">
-        <div style="width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background-color: #1e40af; color: #fff; font-size: 28px; margin: 0 auto 10px auto;">
+
+        <div style="width: 60px;
+                    height: 60px;
+                    line-height: 60px;
+                    border-radius: 50%;
+                    background-color: #1e40af;
+                    color: #fff;
+                    font-size: 28px;
+                    margin: 0 auto 10px auto;">
+
           <span class="glyphicon glyphicon-lock"></span>
+
         </div>
-        <h2 class="auth-title">Hostel Warden & Admin Console</h2>
-        <p class="auth-subtitle">Restricted access for hostel administrators and wardens</p>
+
+        <h2 class="auth-title">
+          Hostel Warden & Admin Console
+        </h2>
+
+        <p class="auth-subtitle">
+          Restricted access for hostel administrators and wardens
+        </p>
+
       </div>
 
       <div id="alert-container"></div>
 
       <form id="form-admin-login">
+
+        <!-- Admin Email -->
         <div class="form-group">
-          <label for="admin-email"><span class="glyphicon glyphicon-envelope"></span> Admin Email *</label>
-          <input type="email" class="form-control" id="admin-email" placeholder="admin@example.com" required>
+
+          <label for="admin-email">
+            <span class="glyphicon glyphicon-envelope"></span>
+            Admin Email *
+          </label>
+
+          <input type="email"
+                 class="form-control"
+                 id="admin-email"
+                 placeholder="admin@example.com"
+                 required>
+
         </div>
 
+        <!-- Admin Password -->
         <div class="form-group">
-          <label for="admin-password"><span class="glyphicon glyphicon-lock"></span> Administrator Password *</label>
-          <input type="password" class="form-control" id="admin-password" placeholder="Enter admin password" required>
+
+          <label for="admin-password">
+            <span class="glyphicon glyphicon-lock"></span>
+            Administrator Password *
+          </label>
+
+          <div class="input-group">
+
+            <input type="password"
+                   class="form-control"
+                   id="admin-password"
+                   placeholder="Enter admin password"
+                   required>
+
+            <span class="input-group-btn">
+
+              <button type="button"
+                      class="btn btn-default"
+                      id="toggle-admin-password"
+                      title="Show Password"
+                      style="height: 34px;">
+
+                <span class="glyphicon glyphicon-eye-open"></span>
+
+              </button>
+
+            </span>
+
+          </div>
+
         </div>
 
-        <button type="submit" id="btn-admin-login" class="btn btn-primary-custom btn-block" style="margin-top: 20px; padding: 10px; font-size: 15px;">
+        <!-- Login Button -->
+        <button type="submit"
+                id="btn-admin-login"
+                class="btn btn-primary-custom btn-block"
+                style="margin-top: 20px;
+                       padding: 10px;
+                       font-size: 15px;">
+
           Login to Admin Console
+
         </button>
+
       </form>
 
       <hr style="margin: 25px 0 15px 0;">
 
       <div class="text-center">
 
-        <p class="small text-muted">Are you a student? <a href="../student/login.html" style="font-weight: 600;">Go to Student Login</a></p>
+        <p class="small text-muted">
+          Are you a student?
+          <a href="../student/login.html"
+             style="font-weight: 600;">
+            Go to Student Login
+          </a>
+        </p>
+
       </div>
+
     </div>
+
   </div>
 
   <footer class="app-footer">
     <div class="container text-center">
-      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+
+      <p>
+        &copy; 2026 Hostel Management System. All Rights Reserved.
+      </p>
+
     </div>
   </footer>
 
@@ -87,10 +177,45 @@
   <script src="../js/bootstrap.min.js"></script>
   <script src="../js/common.js"></script>
   <script src="../js/admin.js"></script>
+
   <script>
     $(document).ready(function() {
+
+      // Admin Login
       initAdminLogin();
+
+      // Show / Hide Admin Password
+      $("#toggle-admin-password").click(function() {
+
+        var passwordField = $("#admin-password");
+        var eyeIcon = $(this).find("span");
+
+        if (passwordField.attr("type") === "password") {
+
+          // Show password
+          passwordField.attr("type", "text");
+
+          eyeIcon.removeClass("glyphicon-eye-open");
+          eyeIcon.addClass("glyphicon-eye-close");
+
+          $(this).attr("title", "Hide Password");
+
+        } else {
+
+          // Hide password
+          passwordField.attr("type", "password");
+
+          eyeIcon.removeClass("glyphicon-eye-close");
+          eyeIcon.addClass("glyphicon-eye-open");
+
+          $(this).attr("title", "Show Password");
+
+        }
+
+      });
+
     });
   </script>
+
 </body>
 </html>
