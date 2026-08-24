@@ -25,6 +25,7 @@
           <span class="icon-bar" style="background-color: #fff;"></span>
           <span class="icon-bar" style="background-color: #fff;"></span>
         </button>
+
         <a class="navbar-brand" href="../index.html">
           <span class="glyphicon glyphicon-home"></span> Hostel Management
         </a>
@@ -43,53 +44,145 @@
 
   <div class="container page-wrapper">
     <div class="auth-box">
+
       <div class="text-center" style="margin-bottom: 20px;">
-        <img src="../images/logo.png" alt="Logo" style="width: 60px; height: 60px; border-radius: 8px; margin-bottom: 10px;">
+        <img src="../images/logo.png"
+             alt="Logo"
+             style="width: 60px; height: 60px; border-radius: 8px; margin-bottom: 10px;">
+
         <h2 class="auth-title">Student Portal Login</h2>
-        <p class="auth-subtitle">Sign in with your registered student credentials</p>
+        <p class="auth-subtitle">
+          Sign in with your registered student credentials
+        </p>
       </div>
 
       <div id="alert-container"></div>
 
       <form id="form-student-login">
+
+        <!-- Email -->
         <div class="form-group">
-          <label for="login-email"><span class="glyphicon glyphicon-envelope"></span> Student Email Address *</label>
-          <input type="email" class="form-control" id="login-email" placeholder="student@example.com" required>
+          <label for="login-email">
+            <span class="glyphicon glyphicon-envelope"></span>
+            Student Email Address *
+          </label>
+
+          <input type="email"
+                 class="form-control"
+                 id="login-email"
+                 placeholder="student@example.com"
+                 required>
         </div>
 
+        <!-- Password -->
         <div class="form-group">
-          <label for="login-password"><span class="glyphicon glyphicon-lock"></span> Password *</label>
-          <input type="password" class="form-control" id="login-password" placeholder="Enter password" required>
+          <label for="login-password">
+            <span class="glyphicon glyphicon-lock"></span>
+            Password *
+          </label>
+
+          <div class="input-group">
+
+            <input type="password"
+                   class="form-control"
+                   id="login-password"
+                   placeholder="Enter password"
+                   required>
+
+            <span class="input-group-btn">
+              <button type="button"
+                      class="btn btn-default"
+                      id="toggle-password"
+                      title="Show Password"
+                      style="height: 34px;">
+                <span class="glyphicon glyphicon-eye-open"></span>
+              </button>
+            </span>
+
+          </div>
         </div>
 
-        <button type="submit" id="btn-login" class="btn btn-primary-custom btn-block" style="margin-top: 20px; padding: 10px; font-size: 15px;">
+        <button type="submit"
+                id="btn-login"
+                class="btn btn-primary-custom btn-block"
+                style="margin-top: 20px; padding: 10px; font-size: 15px;">
           Sign In
         </button>
+
       </form>
 
       <hr style="margin: 25px 0 15px 0;">
 
       <div class="text-center">
-        <p class="small text-muted">Don't have an account yet? <a href="register.html" style="font-weight: 600;">Register here</a></p>
-        <p class="small text-muted">Are you an administrator? <a href="../admin/login.html" style="font-weight: 600;">Admin Login</a> </p>
+        <p class="small text-muted">
+          Don't have an account yet?
+          <a href="register.html" style="font-weight: 600;">
+            Register here
+          </a>
+        </p>
+
+        <p class="small text-muted">
+          Are you an administrator?
+          <a href="../admin/login.html" style="font-weight: 600;">
+            Admin Login
+          </a>
+        </p>
       </div>
+
     </div>
   </div>
 
   <footer class="app-footer">
     <div class="container text-center">
-      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+      <p>
+        &copy; 2026 Hostel Management System. All Rights Reserved.
+      </p>
     </div>
   </footer>
 
+  <!-- JavaScript -->
   <script src="../js/jquery.min.js"></script>
   <script src="../js/bootstrap.min.js"></script>
   <script src="../js/common.js"></script>
   <script src="../js/student.js"></script>
+
   <script>
     $(document).ready(function() {
+
+      // Student Login
       initStudentLogin();
+
+      // Show / Hide Password
+      $("#toggle-password").click(function() {
+
+        var passwordField = $("#login-password");
+        var eyeIcon = $(this).find("span");
+
+        if (passwordField.attr("type") === "password") {
+
+          // Show password
+          passwordField.attr("type", "text");
+
+          eyeIcon.removeClass("glyphicon-eye-open");
+          eyeIcon.addClass("glyphicon-eye-close");
+
+          $(this).attr("title", "Hide Password");
+
+        } else {
+
+          // Hide password
+          passwordField.attr("type", "password");
+
+          eyeIcon.removeClass("glyphicon-eye-close");
+          eyeIcon.addClass("glyphicon-eye-open");
+
+          $(this).attr("title", "Show Password");
+        }
+
+      });
+
     });
   </script>
+
 </body>
 </html>
