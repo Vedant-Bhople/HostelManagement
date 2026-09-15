@@ -1,10 +1,10 @@
 
-package com.hostelmanagement.service;
+package com.hostel.service;
 
-import com.hostelmanagement.model.Allotment;
-import com.hostelmanagement.model.MeritList;
-import com.hostelmanagement.repository.AllotmentRepository;
-import com.hostelmanagement.repository.MeritListRepository;
+import com.hostel.model.Allotment;
+import com.hostel.model.MeritList;
+import com.hostel.repository.AllotmentRepository;
+import com.hostel.repository.MeritListRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
