@@ -1,243 +1,151 @@
-package com.hostel.service;
+package com.hostelmanagement.service;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import com.hostelmanagement.model.Allotment;
+import com.hostelmanagement.model.MeritList;
+import com.hostelmanagement.repository.AllotmentRepository;
+import com.hostelmanagement.repository.MeritListRepository;
 import org.springframework.stereotype.Service;
 
-import com.hostel.model.Allotment;
-import com.hostel.model.MeritList;
-import com.hostel.repository.AllotmentRepository;
-import com.hostel.repository.MeritListRepository;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AllotmentService {
 
-    @Autowired
-    private MeritListRepository meritListRepository;
+    private final MeritListRepository meritListRepository;
+    private final AllotmentRepository allotmentRepository;
+    private final EmailService emailService;
 
-    @Autowired
-    private AllotmentRepository allotmentRepository;
+    public AllotmentService(
+            MeritListRepository meritListRepository,
+            AllotmentRepository allotmentRepository,
+            EmailService emailService) {
 
-    @Autowired
-    private EmailService emailService;
+        this.meritListRepository = meritListRepository;
+        this.allotmentRepository = allotmentRepository;
+        this.emailService = emailService;
+    }
 
-
-    // =========================================================
-    // GENERATE ALLOTMENT
-    // =========================================================
+    // ============================================================
+    // MAIN ALLOTMENT METHOD
+    // ============================================================
 
     public List<Allotment> generateAllotment(
             String gender,
             String branch,
-            String year) {
+            Integer year) {
 
-        List<MeritList> meritList =
+        // --------------------------------------------------------
+        // 1. Get published merit list
+        // --------------------------------------------------------
+
+        List<MeritList> meritStudents =
                 meritListRepository
                         .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                                gender,
-                                branch,
-                                year
-                        );
+                                gender, branch, year)
+                        .stream()
+                        .filter(MeritList::isPublished)
+                        .sorted(Comparator.comparing(MeritList::getMeritRank))
+                        .collect(Collectors.toList());
 
-        if (meritList == null || meritList.isEmpty()) {
-
-            throw new RuntimeException(
-                    "Merit list not found for "
-                            + gender + " - "
-                            + branch + " - "
-                            + year
-            );
+        if (meritStudents.isEmpty()) {
+            return new ArrayList<>();
         }
 
-
-        // =====================================================
-        // CHECK PUBLISHED MERIT LIST
-        // =====================================================
-
-        boolean anyPublished = false;
-
-        for (MeritList merit : meritList) {
-
-            if (merit.isPublished()) {
-                anyPublished = true;
-                break;
-            }
-        }
-
-        if (!anyPublished) {
-
-            throw new RuntimeException(
-                    "Merit list is not published yet for "
-                            + gender + " - "
-                            + branch + " - "
-                            + year
-            );
-        }
-
-
-        // =====================================================
-        // DELETE PREVIOUS ALLOTMENT
-        // =====================================================
+        // --------------------------------------------------------
+        // 2. Delete old allotments for same gender/branch/year
+        // --------------------------------------------------------
 
         List<Allotment> oldAllotments =
                 allotmentRepository
                         .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                                gender,
-                                branch,
-                                year
-                        );
+                                gender, branch, year);
 
-        if (oldAllotments != null
-                && !oldAllotments.isEmpty()) {
-
-            allotmentRepository.deleteAll(
-                    oldAllotments
-            );
+        if (!oldAllotments.isEmpty()) {
+            allotmentRepository.deleteAll(oldAllotments);
         }
 
+        // --------------------------------------------------------
+        // 3. Separate boys / girls logic
+        // --------------------------------------------------------
 
-        // =====================================================
-        // NEW ALLOTMENT LIST
-        // =====================================================
+        List<Allotment> result;
 
-        List<Allotment> allotments =
-                new ArrayList<>();
+        if ("MALE".equalsIgnoreCase(gender)
+                || "BOYS".equalsIgnoreCase(gender)
+                || "M".equalsIgnoreCase(gender)) {
 
-
-        // =====================================================
-        // VALIDATE GENDER
-        // =====================================================
-
-        if ("BOYS".equalsIgnoreCase(gender)) {
-
-            generateBoysAllotment(
-                    meritList,
-                    branch,
-                    year,
-                    allotments
-            );
-
-        } else if ("GIRLS".equalsIgnoreCase(gender)) {
-
-            generateGirlsAllotment(
-                    meritList,
-                    branch,
-                    year,
-                    allotments
-            );
+            result = generateBoysAllotment(
+                    meritStudents, gender, branch, year);
 
         } else {
 
-            throw new RuntimeException(
-                    "Invalid gender. Use BOYS or GIRLS."
-            );
+            result = generateGirlsAllotment(
+                    meritStudents, gender, branch, year);
         }
 
+        // --------------------------------------------------------
+        // 4. Save allotments
+        // --------------------------------------------------------
 
-        // =====================================================
-        // REMAINING STUDENTS -> WAITING LIST
-        // =====================================================
+        List<Allotment> saved =
+                allotmentRepository.saveAll(result);
 
-        addWaitingStudents(
-                meritList,
-                branch,
-                year,
-                allotments
-        );
+        // --------------------------------------------------------
+        // 5. Send emails only to allotted students
+        // --------------------------------------------------------
 
+        for (Allotment allotment : saved) {
 
-        // =====================================================
-        // SAVE
-        // =====================================================
+            if ("ALLOTTED".equalsIgnoreCase(
+                    allotment.getAllotmentStatus())) {
 
-        List<Allotment> savedAllotments =
-                allotmentRepository.saveAll(
-                        allotments
-                );
-
-
-        // =====================================================
-        // SEND EMAIL
-        // =====================================================
-
-        try {
-
-            for (Allotment item : savedAllotments) {
-
-                if ("ALLOTTED".equalsIgnoreCase(
-                        item.getAllotmentStatus())) {
-
-                    emailService.sendAllotmentEmail(item);
+                try {
+                    emailService.sendAllotmentEmail(allotment);
+                } catch (Exception e) {
+                    System.out.println(
+                            "Email failed for allotment: "
+                                    + allotment.getId());
                 }
             }
-
-        } catch (Exception e) {
-
-            // Email failure must not stop allotment
-            System.out.println(
-                    "Email notification failed: "
-                            + e.getMessage()
-            );
         }
 
-
-        return savedAllotments;
+        return saved;
     }
 
-
-    // =========================================================
+    // ============================================================
     // BOYS ALLOTMENT
-    // =========================================================
-    //
-    // TOTAL BOYS SEATS = 11
-    //
-    // OPEN / SEBC = 6
-    // OBC / SBC    = 2
-    // SC / ST      = 2
-    // NT           = 1
-    //
-    // IMPORTANT:
-    // OPEN/SEBC seats are first filled by overall merit
-    // according to the OPEN/SEBC eligibility rules.
-    //
-    // Then reserved pools are filled by category merit.
-    // =========================================================
+    // ============================================================
 
-    private void generateBoysAllotment(
-            List<MeritList> meritList,
+    private List<Allotment> generateBoysAllotment(
+            List<MeritList> students,
+            String gender,
             String branch,
-            String year,
-            List<Allotment> allotments) {
+            Integer year) {
 
+        List<Allotment> allotments = new ArrayList<>();
 
-        // =====================================================
-        // ONLY PUBLISHED STUDENTS
-        // =====================================================
+        Set<Long> alreadyAllotted = new HashSet<>();
 
-        List<MeritList> students =
-                getPublishedStudents(
-                        meritList
-                );
+        // ========================================================
+        // BOYS SEATS
+        //
+        // OPEN/SEBC = 6
+        // OBC/SBC   = 2
+        // SC/ST     = 2
+        // NT        = 1
+        //
+        // TOTAL = 11
+        // ========================================================
 
-
-        // =====================================================
-        // BOYS SEAT POOL
-        // =====================================================
+        // --------------------------------------------------------
+        // STEP 1: OPEN/SEBC - 6 SEATS
+        //
+        // IMPORTANT:
+        // Any category can take OPEN/SEBC seat based on merit.
+        // --------------------------------------------------------
 
         int openSeats = 6;
-        int obcSbcSeats = 2;
-        int scStSeats = 2;
-        int ntSeats = 1;
-
-
-        // =====================================================
-        // STEP 1
-        // OPEN / SEBC
-        //
-        // Merit-wise
-        // =====================================================
 
         for (MeritList merit : students) {
 
@@ -245,105 +153,69 @@ public class AllotmentService {
                 break;
             }
 
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
+            if (merit.getApplication() == null) {
                 continue;
             }
 
+            Allotment allotment =
+                    createAllotment(
+                            merit,
+                            gender,
+                            branch,
+                            year,
+                            "OPEN/SEBC",
+                            openSeats);
 
-            String commonCategory =
-                    normalizeCategory(
-                            merit.getCategory()
-                    );
+            allotments.add(allotment);
 
+            alreadyAllotted.add(merit.getId());
 
-            /*
-             * OPEN / SEBC pool.
-             *
-             * OPEN and SEBC students are directly eligible.
-             *
-             * Other reserved-category students are NOT
-             * automatically moved here.
-             *
-             * If your college rule allows reserved students
-             * to consume OPEN seats on merit, this method can
-             * be changed separately without changing
-             * category normalization.
-             */
-
-            if ("OPEN".equalsIgnoreCase(
-                    commonCategory)
-                    || "SEBC".equalsIgnoreCase(
-                    commonCategory)) {
-
-
-                createAndAddAllotment(
-                        merit,
-                        "OPEN/SEBC",
-                        "B",
-                        branch,
-                        year,
-                        allotments,
-                        "OPEN-SEBC"
-                );
-
-                openSeats--;
-            }
+            openSeats--;
         }
 
+        // --------------------------------------------------------
+        // STEP 2: OBC/SBC - 2 SEATS
+        //
+        // Only remaining OBC/SBC students.
+        // --------------------------------------------------------
 
-        // =====================================================
-        // STEP 2
-        // OBC / SBC
-        // =====================================================
+        int obcSeats = 2;
 
         for (MeritList merit : students) {
 
-            if (obcSbcSeats <= 0) {
+            if (obcSeats <= 0) {
                 break;
             }
 
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
+            if (alreadyAllotted.contains(merit.getId())) {
                 continue;
             }
 
-
-            String commonCategory =
-                    normalizeCategory(
-                            merit.getCategory()
-                    );
-
-
-            if ("OBC".equalsIgnoreCase(
-                    commonCategory)
-                    || "SBC".equalsIgnoreCase(
-                    commonCategory)) {
-
-
-                createAndAddAllotment(
-                        merit,
-                        "OBC/SBC",
-                        "B",
-                        branch,
-                        year,
-                        allotments,
-                        "OBC-SBC"
-                );
-
-                obcSbcSeats--;
+            if (!isOBCorSBC(merit.getCategory())) {
+                continue;
             }
+
+            Allotment allotment =
+                    createAllotment(
+                            merit,
+                            gender,
+                            branch,
+                            year,
+                            "OBC/SBC",
+                            obcSeats);
+
+            allotments.add(allotment);
+
+            alreadyAllotted.add(merit.getId());
+
+            obcSeats--;
         }
 
+        // --------------------------------------------------------
+        // STEP 3: SC/ST - 2 SEATS
+        // --------------------------------------------------------
 
-        // =====================================================
-        // STEP 3
-        // SC / ST
-        // =====================================================
+        int scStSeats = 2;
 
         for (MeritList merit : students) {
 
@@ -351,45 +223,35 @@ public class AllotmentService {
                 break;
             }
 
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
+            if (alreadyAllotted.contains(merit.getId())) {
                 continue;
             }
 
-
-            String commonCategory =
-                    normalizeCategory(
-                            merit.getCategory()
-                    );
-
-
-            if ("SC".equalsIgnoreCase(
-                    commonCategory)
-                    || "ST".equalsIgnoreCase(
-                    commonCategory)) {
-
-
-                createAndAddAllotment(
-                        merit,
-                        "SC/ST",
-                        "B",
-                        branch,
-                        year,
-                        allotments,
-                        "SC-ST"
-                );
-
-                scStSeats--;
+            if (!isSCorST(merit.getCategory())) {
+                continue;
             }
+
+            Allotment allotment =
+                    createAllotment(
+                            merit,
+                            gender,
+                            branch,
+                            year,
+                            "SC/ST",
+                            scStSeats);
+
+            allotments.add(allotment);
+
+            alreadyAllotted.add(merit.getId());
+
+            scStSeats--;
         }
 
+        // --------------------------------------------------------
+        // STEP 4: VJ/NT-B/NT-C/NT-D - 1 SEAT
+        // --------------------------------------------------------
 
-        // =====================================================
-        // STEP 4
-        // NT
-        // =====================================================
+        int ntSeats = 1;
 
         for (MeritList merit : students) {
 
@@ -397,1008 +259,505 @@ public class AllotmentService {
                 break;
             }
 
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
+            if (alreadyAllotted.contains(merit.getId())) {
                 continue;
             }
 
-
-            String commonCategory =
-                    normalizeCategory(
-                            merit.getCategory()
-                    );
-
-
-            if ("NT".equalsIgnoreCase(
-                    commonCategory)) {
-
-
-                createAndAddAllotment(
-                        merit,
-                        "NT",
-                        "B",
-                        branch,
-                        year,
-                        allotments,
-                        "NT"
-                );
-
-                ntSeats--;
-            }
-        }
-    }
-
-
-    // =========================================================
-    // GIRLS ALLOTMENT
-    // =========================================================
-    //
-    // TOTAL GIRLS SEATS = 3
-    //
-    // OPEN                  = 1
-    // OBC / SBC             = 1
-    // AGAINST NT/SC/ST      = 1
-    //
-    // =========================================================
-
-    private void generateGirlsAllotment(
-            List<MeritList> meritList,
-            String branch,
-            String year,
-            List<Allotment> allotments) {
-
-
-        // =====================================================
-        // ONLY PUBLISHED STUDENTS
-        // =====================================================
-
-        List<MeritList> students =
-                getPublishedStudents(
-                        meritList
-                );
-
-
-        // =====================================================
-        // STEP 1
-        // OPEN = 1
-        //
-        // Only OPEN students
-        // =====================================================
-
-        for (MeritList merit : students) {
-
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
+            if (!isNTCategory(merit.getCategory())) {
                 continue;
             }
 
+            Allotment allotment =
+                    createAllotment(
+                            merit,
+                            gender,
+                            branch,
+                            year,
+                            "VJ/NT-B/NT-C/NT-D",
+                            ntSeats);
 
-            String commonCategory =
-                    normalizeCategory(
-                            merit.getCategory()
-                    );
+            allotments.add(allotment);
 
+            alreadyAllotted.add(merit.getId());
 
-            if ("OPEN".equalsIgnoreCase(
-                    commonCategory)) {
-
-
-                createAndAddAllotment(
-                        merit,
-                        "OPEN",
-                        "G",
-                        branch,
-                        year,
-                        allotments,
-                        "OPEN"
-                );
-
-                break;
-            }
+            ntSeats--;
         }
 
-
-        // =====================================================
-        // STEP 2
-        // OBC / SBC = 1
-        // =====================================================
-
-        for (MeritList merit : students) {
-
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
-                continue;
-            }
-
-
-            String commonCategory =
-                    normalizeCategory(
-                            merit.getCategory()
-                    );
-
-
-            if ("OBC".equalsIgnoreCase(
-                    commonCategory)
-                    || "SBC".equalsIgnoreCase(
-                    commonCategory)) {
-
-
-                createAndAddAllotment(
-                        merit,
-                        "OBC/SBC",
-                        "G",
-                        branch,
-                        year,
-                        allotments,
-                        "OBC-SBC"
-                );
-
-                break;
-            }
-        }
-
-
-        // =====================================================
-        // STEP 3
-        // AGAINST NT / SC / ST = 1
-        // =====================================================
-
-        for (MeritList merit : students) {
-
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
-                continue;
-            }
-
-
-            String commonCategory =
-                    normalizeCategory(
-                            merit.getCategory()
-                    );
-
-
-            if ("NT".equalsIgnoreCase(
-                    commonCategory)
-                    || "SC".equalsIgnoreCase(
-                    commonCategory)
-                    || "ST".equalsIgnoreCase(
-                    commonCategory)) {
-
-
-                createAndAddAllotment(
-                        merit,
-                        "AGAINST NT/SC/ST",
-                        "G",
-                        branch,
-                        year,
-                        allotments,
-                        "AGAINST"
-                );
-
-                break;
-            }
-        }
-    }
-
-
-    // =========================================================
-    // GET PUBLISHED STUDENTS
-    // =========================================================
-
-    private List<MeritList> getPublishedStudents(
-            List<MeritList> meritList) {
-
-
-        List<MeritList> students =
-                new ArrayList<>();
-
-
-        for (MeritList merit : meritList) {
-
-            if (merit.isPublished()) {
-
-                students.add(merit);
-            }
-        }
-
-
-        return students;
-    }
-
-
-    // =========================================================
-    // ADD ALLOTMENT
-    // =========================================================
-
-    private void createAndAddAllotment(
-            MeritList merit,
-            String allotmentCategory,
-            String hostelCode,
-            String branch,
-            String year,
-            List<Allotment> allotments,
-            String seatPrefix) {
-
-
-        int seatNumber =
-                getNextSeatNumber(
-                        allotments,
-                        hostelCode,
-                        seatPrefix
-                );
-
-
-        Allotment allotment =
-                createAllotment(
-                        merit,
-                        allotmentCategory,
-                        hostelCode,
-                        branch,
-                        year,
-                        seatNumber,
-                        seatPrefix
-                );
-
-
-        allotments.add(
-                allotment
-        );
-    }
-
-
-    // =========================================================
-    // GET NEXT AVAILABLE SEAT NUMBER
-    // =========================================================
-
-    private int getNextSeatNumber(
-            List<Allotment> allotments,
-            String hostelCode,
-            String seatPrefix) {
-
-
-        int highest = 0;
-
-
-        for (Allotment allotment : allotments) {
-
-            if (allotment.getSeatNumber() == null) {
-                continue;
-            }
-
-
-            String seat =
-                    allotment.getSeatNumber();
-
-
-            String prefix =
-                    hostelCode
-                            + "-"
-                            + seatPrefix
-                            + "-";
-
-
-            if (!seat.startsWith(prefix)) {
-                continue;
-            }
-
-
-            try {
-
-                String numberPart =
-                        seat.substring(
-                                prefix.length()
-                        );
-
-
-                int number =
-                        Integer.parseInt(
-                                numberPart
-                        );
-
-
-                if (number > highest) {
-                    highest = number;
-                }
-
-            } catch (Exception ignored) {
-
-                // Ignore invalid seat number
-            }
-        }
-
-
-        return highest + 1;
-    }
-
-
-    // =========================================================
-    // ADD WAITING STUDENTS
-    // =========================================================
-
-    private void addWaitingStudents(
-            List<MeritList> meritList,
-            String branch,
-            String year,
-            List<Allotment> allotments) {
-
+        // --------------------------------------------------------
+        // STEP 5: WAITING LIST
+        // --------------------------------------------------------
 
         int waitingNumber = 1;
 
+        for (MeritList merit : students) {
 
-        for (MeritList merit : meritList) {
-
-            if (!merit.isPublished()) {
+            if (alreadyAllotted.contains(merit.getId())) {
                 continue;
             }
 
-
-            if (isAlreadyAllotted(
-                    merit,
-                    allotments)) {
-
+            if (merit.getApplication() == null) {
                 continue;
             }
 
+            Allotment waiting = new Allotment();
 
-            String hostelCode =
-                    "BOYS".equalsIgnoreCase(
-                            merit.getGender()
-                    )
-                            ? "B"
-                            : "G";
-
-
-            Allotment waiting =
-                    createAllotment(
-                            merit,
-                            "WAITING",
-                            hostelCode,
-                            branch,
-                            year,
-                            waitingNumber,
-                            "WAIT"
-                    );
-
-
-            waiting.setAllotmentStatus(
-                    "WAITING"
-            );
-
-
+            waiting.setApplication(merit.getApplication());
+            waiting.setMeritList(merit);
+            waiting.setGender(gender);
+            waiting.setBranch(branch);
+            waiting.setYear(year);
+            waiting.setCategory(merit.getCategory());
+            waiting.setAllotmentCategory("WAITING");
+            waiting.setMeritRank(merit.getMeritRank());
+            waiting.setAggregate(merit.getAggregate());
             waiting.setSeatNumber(
-                    hostelCode
-                            + "-WAIT-"
-                            + String.format(
-                            "%02d",
-                            waitingNumber
-                    )
-            );
+                    "B-WAIT-" +
+                            String.format("%02d", waitingNumber));
+            waiting.setAllotmentStatus("WAITING");
 
-
-            allotments.add(
-                    waiting
-            );
-
+            allotments.add(waiting);
 
             waitingNumber++;
         }
+
+        return allotments;
     }
 
+    // ============================================================
+    // GIRLS ALLOTMENT
+    // ============================================================
 
-    // =========================================================
-    // CHECK ALREADY ALLOTTED
-    // =========================================================
+    private List<Allotment> generateGirlsAllotment(
+            List<MeritList> students,
+            String gender,
+            String branch,
+            Integer year) {
 
-    private boolean isAlreadyAllotted(
-            MeritList merit,
-            List<Allotment> allotments) {
+        List<Allotment> allotments = new ArrayList<>();
 
+        Set<Long> alreadyAllotted = new HashSet<>();
 
-        if (merit == null
-                || merit.getId() == null) {
+        // ========================================================
+        // GIRLS SEATS
+        //
+        // OPEN/SEBC = 1
+        // OBC/SBC   = 1
+        // NT/SC/ST  = 1
+        //
+        // TOTAL = 3
+        // ========================================================
 
-            return false;
-        }
+        // --------------------------------------------------------
+        // STEP 1: OPEN/SEBC - 1 SEAT
+        //
+        // Any category can get this seat based on merit.
+        // --------------------------------------------------------
 
+        int openSeats = 1;
 
-        for (Allotment allotment : allotments) {
+        for (MeritList merit : students) {
 
-            if (allotment.getMeritList() == null) {
+            if (openSeats <= 0) {
+                break;
+            }
+
+            if (merit.getApplication() == null) {
                 continue;
             }
 
+            Allotment allotment =
+                    createAllotment(
+                            merit,
+                            gender,
+                            branch,
+                            year,
+                            "OPEN/SEBC",
+                            openSeats);
 
-            if (allotment.getMeritList()
-                    .getId()
-                    .equals(
-                            merit.getId()
-                    )) {
+            allotments.add(allotment);
 
-                return true;
-            }
+            alreadyAllotted.add(merit.getId());
+
+            openSeats--;
         }
 
+        // --------------------------------------------------------
+        // STEP 2: OBC/SBC - 1 SEAT
+        // --------------------------------------------------------
 
-        return false;
+        int obcSeats = 1;
+
+        for (MeritList merit : students) {
+
+            if (obcSeats <= 0) {
+                break;
+            }
+
+            if (alreadyAllotted.contains(merit.getId())) {
+                continue;
+            }
+
+            if (!isOBCorSBC(merit.getCategory())) {
+                continue;
+            }
+
+            Allotment allotment =
+                    createAllotment(
+                            merit,
+                            gender,
+                            branch,
+                            year,
+                            "OBC/SBC",
+                            obcSeats);
+
+            allotments.add(allotment);
+
+            alreadyAllotted.add(merit.getId());
+
+            obcSeats--;
+        }
+
+        // --------------------------------------------------------
+        // STEP 3: VJ/NT-B/NT-C/NT-D / SC/ST - 1 SEAT
+        // --------------------------------------------------------
+
+        int againstSeats = 1;
+
+        for (MeritList merit : students) {
+
+            if (againstSeats <= 0) {
+                break;
+            }
+
+            if (alreadyAllotted.contains(merit.getId())) {
+                continue;
+            }
+
+            if (!isGirlsAgainstCategory(merit.getCategory())) {
+                continue;
+            }
+
+            Allotment allotment =
+                    createAllotment(
+                            merit,
+                            gender,
+                            branch,
+                            year,
+                            "VJ/NT-B/NT-C/NT-D / SC/ST",
+                            againstSeats);
+
+            allotments.add(allotment);
+
+            alreadyAllotted.add(merit.getId());
+
+            againstSeats--;
+        }
+
+        // --------------------------------------------------------
+        // STEP 4: WAITING LIST
+        // --------------------------------------------------------
+
+        int waitingNumber = 1;
+
+        for (MeritList merit : students) {
+
+            if (alreadyAllotted.contains(merit.getId())) {
+                continue;
+            }
+
+            if (merit.getApplication() == null) {
+                continue;
+            }
+
+            Allotment waiting = new Allotment();
+
+            waiting.setApplication(merit.getApplication());
+            waiting.setMeritList(merit);
+            waiting.setGender(gender);
+            waiting.setBranch(branch);
+            waiting.setYear(year);
+            waiting.setCategory(merit.getCategory());
+            waiting.setAllotmentCategory("WAITING");
+            waiting.setMeritRank(merit.getMeritRank());
+            waiting.setAggregate(merit.getAggregate());
+            waiting.setSeatNumber(
+                    "G-WAIT-" +
+                            String.format("%02d", waitingNumber));
+            waiting.setAllotmentStatus("WAITING");
+
+            allotments.add(waiting);
+
+            waitingNumber++;
+        }
+
+        return allotments;
     }
 
-
-    // =========================================================
+    // ============================================================
     // CREATE ALLOTMENT
-    // =========================================================
+    // ============================================================
 
     private Allotment createAllotment(
             MeritList merit,
-            String allotmentCategory,
-            String hostelCode,
+            String gender,
             String branch,
-            String year,
-            int seatNumber,
-            String seatPrefix) {
+            Integer year,
+            String allotmentCategory,
+            int seatNumber) {
 
+        Allotment allotment = new Allotment();
 
-        Allotment allotment =
-                new Allotment();
+        allotment.setApplication(merit.getApplication());
+        allotment.setMeritList(merit);
 
+        allotment.setGender(gender);
+        allotment.setBranch(branch);
+        allotment.setYear(year);
 
-        // =====================================================
-        // APPLICATION
-        // =====================================================
+        // Keep student's ORIGINAL category
+        allotment.setCategory(merit.getCategory());
 
-        allotment.setApplication(
-                merit.getApplication()
-        );
+        allotment.setAllotmentCategory(allotmentCategory);
 
+        allotment.setMeritRank(merit.getMeritRank());
+        allotment.setAggregate(merit.getAggregate());
 
-        // =====================================================
-        // MERIT
-        // =====================================================
+        // --------------------------------------------------------
+        // Seat Number
+        // --------------------------------------------------------
 
-        allotment.setMeritList(
-                merit
-        );
+        String prefix =
+                isBoys(gender) ? "B" : "G";
 
-
-        // =====================================================
-        // HOSTEL TYPE
-        // =====================================================
-
-        if ("B".equalsIgnoreCase(
-                hostelCode)) {
-
-            allotment.setHostelType(
-                    "BOYS HOSTEL"
-            );
-
-        } else {
-
-            allotment.setHostelType(
-                    "GIRLS HOSTEL"
-            );
-        }
-
-
-        // =====================================================
-        // BASIC INFORMATION
-        // =====================================================
-
-        allotment.setGender(
-                merit.getGender()
-        );
-
-
-        allotment.setBranch(
-                branch
-        );
-
-
-        allotment.setYear(
-                year
-        );
-
-
-        // =====================================================
-        // ORIGINAL CATEGORY
-        // =====================================================
-
-        allotment.setCategory(
-                merit.getCategory()
-        );
-
-
-        // =====================================================
-        // ALLOTMENT CATEGORY
-        // =====================================================
-
-        allotment.setAllotmentCategory(
-                allotmentCategory
-        );
-
-
-        // =====================================================
-        // MERIT INFORMATION
-        // =====================================================
-
-        allotment.setMeritRank(
-                merit.getMeritRank()
-        );
-
-
-        allotment.setAggregate(
-                merit.getAggregate()
-        );
-
-
-        // =====================================================
-        // SEAT NUMBER
-        // =====================================================
+        String categoryCode =
+                getCategoryCode(allotmentCategory);
 
         allotment.setSeatNumber(
-                generateSeatNumber(
-                        hostelCode,
-                        branch,
-                        year,
-                        seatPrefix,
-                        seatNumber
-                )
+                prefix
+                        + "-"
+                        + branch
+                        + "-Y"
+                        + year
+                        + "-"
+                        + categoryCode
+                        + "-"
+                        + String.format("%02d", seatNumber)
         );
 
-
-        // =====================================================
-        // STATUS
-        // =====================================================
-
-        allotment.setAllotmentStatus(
-                "ALLOTTED"
-        );
-
+        allotment.setAllotmentStatus("ALLOTTED");
 
         return allotment;
     }
 
+    // ============================================================
+    // CATEGORY CHECKS
+    // ============================================================
 
-    // =========================================================
-    // GENERATE SEAT NUMBER
-    // =========================================================
-
-    private String generateSeatNumber(
-            String hostelCode,
-            String branch,
-            String year,
-            String seatPrefix,
-            int seatNumber) {
-
-
-        String branchCode =
-                getBranchCode(
-                        branch
-                );
-
-
-        return hostelCode
-                + "-"
-                + branchCode
-                + "-Y"
-                + year
-                + "-"
-                + seatPrefix
-                + "-"
-                + String.format(
-                        "%02d",
-                        seatNumber
-                );
-    }
-
-
-    // =========================================================
-    // CATEGORY NORMALIZATION
-    // =========================================================
-    //
-    // ORIGINAL CATEGORY IS NOT CHANGED.
-    //
-    // Only COMMON CATEGORY is returned.
-    //
-    // =========================================================
-
-    private String normalizeCategory(
-            String category) {
-
-
-        if (category == null
-                || category.trim().isEmpty()) {
-
-            return "OPEN";
-        }
-
-
-        String value =
-                category
-                        .trim()
-                        .toUpperCase();
-
-
-        // =====================================================
-        // OPEN
-        // =====================================================
-
-        if (value.equals("OPEN")) {
-
-            return "OPEN";
-        }
-
-
-        // =====================================================
-        // OBC
-        // =====================================================
-
-        if (value.equals("OBC")) {
-
-            return "OBC";
-        }
-
-
-        // =====================================================
-        // SBC
-        // =====================================================
-
-        if (value.equals("SBC")) {
-
-            return "SBC";
-        }
-
-
-        // =====================================================
-        // SC
-        // =====================================================
-
-        if (value.equals("SC")) {
-
-            return "SC";
-        }
-
-
-        // =====================================================
-        // ST
-        // =====================================================
-
-        if (value.equals("ST")) {
-
-            return "ST";
-        }
-
-
-        // =====================================================
-        // NT GROUP
-        // =====================================================
-        //
-        // VJ
-        // VJ-A
-        // DT/VJ NT-A
-        // NT-1 NT-B
-        // NT-2 NT-C
-        // NT-3 NT-D
-        // NT-B
-        // NT-C
-        // NT-D
-        //
-        // ALL -> NT
-        // =====================================================
-
-        if (value.equals("VJ")
-                || value.equals("VJ-A")
-                || value.equals("DT/VJ NT-A")
-                || value.equals("NT-1 NT-B")
-                || value.equals("NT-2 NT-C")
-                || value.equals("NT-3 NT-D")
-                || value.equals("NT-B")
-                || value.equals("NT-C")
-                || value.equals("NT-D")) {
-
-            return "NT";
-        }
-
-
-        // =====================================================
-        // SEBC
-        // =====================================================
-
-        if (value.equals("SEBC")) {
-
-            return "SEBC";
-        }
-
-
-        // =====================================================
-        // UNKNOWN CATEGORY
-        // =====================================================
-
-        return "OPEN";
-    }
-
-
-    // =========================================================
-    // CATEGORY CODE
-    // =========================================================
-
-    private String getCategoryCode(
-            String category) {
-
+    private boolean isOBCorSBC(String category) {
 
         if (category == null) {
-            return "GEN";
+            return false;
         }
 
+        String c = category
+                .trim()
+                .toUpperCase();
 
-        switch (
-                category
-                        .trim()
-                        .toUpperCase()
-        ) {
-
-            case "SC":
-                return "SC";
-
-            case "ST":
-                return "ST";
-
-            case "OBC":
-                return "OBC";
-
-            case "SBC":
-                return "SBC";
-
-            case "NT":
-                return "NT";
-
-            case "OPEN":
-                return "OP";
-
-            case "SEBC":
-                return "SEBC";
-
-            case "OBC/SBC":
-                return "OBC";
-
-            case "OPEN/SEBC":
-                return "OP";
-
-            case "SC/ST":
-                return "SCST";
-
-            case "AGAINST NT/SC/ST":
-                return "AGAINST";
-
-            case "WAITING":
-                return "WAIT";
-
-            default:
-                return "GEN";
-        }
+        return c.equals("OBC")
+                || c.equals("SBC");
     }
 
+    // ------------------------------------------------------------
 
-    // =========================================================
-    // BRANCH CODE
-    // =========================================================
+    private boolean isSCorST(String category) {
 
-    private String getBranchCode(
-            String branch) {
-
-
-        if (branch == null) {
-            return "OTHER";
+        if (category == null) {
+            return false;
         }
 
+        String c = category
+                .trim()
+                .toUpperCase();
 
-        switch (
-                branch
-                        .trim()
-                        .toUpperCase()
-        ) {
+        return c.equals("SC")
+                || c.equals("ST");
+    }
 
-            case "COMPUTER":
-                return "COMP";
+    // ------------------------------------------------------------
 
-            case "MECHANICAL":
-                return "MECH";
+    private boolean isNTCategory(String category) {
 
-            case "CIVIL":
-                return "CIVIL";
-
-            case "ELECTRICAL":
-                return "ELEC";
-
-            case "IT":
-                return "IT";
-
-            default:
-                return "OTHER";
+        if (category == null) {
+            return false;
         }
+
+        String c = category
+                .trim()
+                .toUpperCase();
+
+        return c.equals("VJ")
+                || c.equals("VJ-A")
+                || c.equals("DT")
+                || c.equals("NT")
+                || c.equals("NT-1")
+                || c.equals("NT-2")
+                || c.equals("NT-3")
+                || c.equals("NT-4")
+                || c.equals("NT-A")
+                || c.equals("NT-B")
+                || c.equals("NT-C")
+                || c.equals("NT-D")
+                || c.contains("VJ")
+                || c.contains("NT-1")
+                || c.contains("NT-2")
+                || c.contains("NT-3")
+                || c.contains("NT-4")
+                || c.contains("NT-A")
+                || c.contains("NT-B")
+                || c.contains("NT-C")
+                || c.contains("NT-D");
     }
 
+    // ------------------------------------------------------------
 
-    // =========================================================
-    // GET ALLOTMENT
-    // =========================================================
+    private boolean isGirlsAgainstCategory(String category) {
 
-    public List<Allotment> getAllotment(
-            String gender,
-            String branch,
-            String year) {
-
-
-        return allotmentRepository
-                .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                        gender,
-                        branch,
-                        year
-                );
+        return isNTCategory(category)
+                || isSCorST(category);
     }
 
+    // ============================================================
+    // CATEGORY CODE FOR SEAT NUMBER
+    // ============================================================
 
-    // =========================================================
-    // GET STUDENT ALLOTMENTS
-    // =========================================================
+    private String getCategoryCode(String allotmentCategory) {
 
-    public List<Allotment> getStudentAllotments(
-            Long userId) {
+        if (allotmentCategory == null) {
+            return "GENERAL";
+        }
 
+        if (allotmentCategory.equalsIgnoreCase("OPEN/SEBC")) {
+            return "OPEN-SEBC";
+        }
 
-        return allotmentRepository
-                .findByApplication_User_Id(
-                        userId
-                );
+        if (allotmentCategory.equalsIgnoreCase("OBC/SBC")) {
+            return "OBC-SBC";
+        }
+
+        if (allotmentCategory.equalsIgnoreCase("SC/ST")) {
+            return "SC-ST";
+        }
+
+        if (allotmentCategory
+                .equalsIgnoreCase("VJ/NT-B/NT-C/NT-D")) {
+            return "VJ-NT";
+        }
+
+        if (allotmentCategory
+                .equalsIgnoreCase(
+                        "VJ/NT-B/NT-C/NT-D / SC/ST")) {
+            return "AGAINST";
+        }
+
+        return "GENERAL";
     }
 
+    // ============================================================
+    // GENDER CHECK
+    // ============================================================
 
-    // =========================================================
-    // ACCEPT SEAT
-    // =========================================================
+    private boolean isBoys(String gender) {
 
-    public Allotment acceptSeat(
-            Long allotmentId) {
+        return "MALE".equalsIgnoreCase(gender)
+                || "BOYS".equalsIgnoreCase(gender)
+                || "M".equalsIgnoreCase(gender);
+    }
 
+    // ============================================================
+    // ACCEPT ALLOTMENT
+    // ============================================================
+
+    public Allotment acceptAllotment(Long allotmentId) {
 
         Allotment allotment =
                 allotmentRepository
                         .findById(allotmentId)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Allotment not found"
-                                )
-                        );
-
-
-        // =====================================================
-        // REJECTED
-        // =====================================================
-
-        if ("REJECTED".equalsIgnoreCase(
-                allotment.getAllotmentStatus())) {
-
-            throw new RuntimeException(
-                    "This seat has already been rejected"
-            );
-        }
-
-
-        // =====================================================
-        // WAITING
-        // =====================================================
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Allotment not found"));
 
         if ("WAITING".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
 
             throw new RuntimeException(
-                    "Waiting list student cannot accept a seat"
-            );
+                    "Waiting list student cannot accept a seat");
         }
-
-
-        // =====================================================
-        // ALREADY ACCEPTED
-        // =====================================================
-
-        if ("ACCEPTED".equalsIgnoreCase(
-                allotment.getAllotmentStatus())) {
-
-            throw new RuntimeException(
-                    "Seat is already accepted"
-            );
-        }
-
-
-        // =====================================================
-        // ACCEPT
-        // =====================================================
-
-        allotment.setAllotmentStatus(
-                "ACCEPTED"
-        );
-
-
-        return allotmentRepository.save(
-                allotment
-        );
-    }
-
-
-    // =========================================================
-    // REJECT SEAT
-    // =========================================================
-
-    public Allotment rejectSeat(
-            Long allotmentId) {
-
-
-        Allotment allotment =
-                allotmentRepository
-                        .findById(allotmentId)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Allotment not found"
-                                )
-                        );
-
-
-        // =====================================================
-        // ACCEPTED
-        // =====================================================
-
-        if ("ACCEPTED".equalsIgnoreCase(
-                allotment.getAllotmentStatus())) {
-
-            throw new RuntimeException(
-                    "Accepted seat cannot be rejected"
-            );
-        }
-
-
-        // =====================================================
-        // ALREADY REJECTED
-        // =====================================================
 
         if ("REJECTED".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
 
             throw new RuntimeException(
-                    "Seat is already rejected"
-            );
+                    "Rejected allotment cannot be accepted");
         }
 
+        if ("ACCEPTED".equalsIgnoreCase(
+                allotment.getAllotmentStatus())) {
 
-        // =====================================================
-        // WAITING
-        // =====================================================
+            throw new RuntimeException(
+                    "Allotment is already accepted");
+        }
+
+        allotment.setAllotmentStatus("ACCEPTED");
+
+        return allotmentRepository.save(allotment);
+    }
+
+    // ============================================================
+    // REJECT ALLOTMENT
+    // ============================================================
+
+    public Allotment rejectAllotment(Long allotmentId) {
+
+        Allotment allotment =
+                allotmentRepository
+                        .findById(allotmentId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Allotment not found"));
 
         if ("WAITING".equalsIgnoreCase(
                 allotment.getAllotmentStatus())) {
 
             throw new RuntimeException(
-                    "Waiting list student has no allotted seat"
-            );
+                    "Waiting list student cannot reject a seat");
         }
 
+        if ("ACCEPTED".equalsIgnoreCase(
+                allotment.getAllotmentStatus())) {
 
-        // =====================================================
-        // REJECT
-        // =====================================================
+            throw new RuntimeException(
+                    "Accepted allotment cannot be rejected");
+        }
 
-        allotment.setAllotmentStatus(
-                "REJECTED"
-        );
+        if ("REJECTED".equalsIgnoreCase(
+                allotment.getAllotmentStatus())) {
 
+            throw new RuntimeException(
+                    "Allotment is already rejected");
+        }
 
-        return allotmentRepository.save(
-                allotment
-        );
+        allotment.setAllotmentStatus("REJECTED");
+
+        return allotmentRepository.save(allotment);
+    }
+
+    // ============================================================
+    // GET ALLOTMENT BY USER
+    // ============================================================
+
+    public Optional<Allotment> getAllotmentByUserId(Long userId) {
+
+        return allotmentRepository
+                .findByApplication_User_Id(userId);
     }
 }
