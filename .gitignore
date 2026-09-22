@@ -1,0 +1,27 @@
+# Maven
+target/
+
+# Eclipse / STS
+.classpath
+.project
+.factorypath
+.settings/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Java
+*.class
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+
+# Local configuration
+application-local.properties
+
+# Uploaded files
+uploads/

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hostel Admission Application - HMS</title>
+
+  <!-- Bootstrap 3 CSS -->
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-custom navbar-static-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+        </button>
+        <a class="navbar-brand" href="dashboard.html">
+          <span class="glyphicon glyphicon-home"></span> HMS Student Portal
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="dashboard.html"><span class="glyphicon glyphicon-dashboard"></span> Dashboard</a></li>
+          <li class="active"><a href="application.html"><span class="glyphicon glyphicon-edit"></span> Application</a></li>
+          <li><a href="documents.html"><span class="glyphicon glyphicon-folder-open"></span> Documents</a></li>
+          <li><a href="merit-list.html"><span class="glyphicon glyphicon-list-alt"></span> Merit List</a></li>
+          <li><a href="allotment.html"><span class="glyphicon glyphicon-bed"></span> Allotment</a></li>
+          <li><a href="profile.html"><span class="glyphicon glyphicon-user"></span> Profile</a></li>
+          <li><a href="#" id="btn-nav-logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container page-wrapper">
+
+    <!-- Page Header Box -->
+    <div class="page-header-box">
+      <h2>Hostel Admission Application Form</h2>
+      <p>Please enter your personal, reservation category, and academic score details accurately.</p>
+    </div>
+
+    <div id="alert-container"></div>
+    <div id="form-info-alert" class="alert alert-info hidden"></div>
+
+    <form id="form-hostel-application">
+
+      <!-- 1. Personal Information -->
+      <div class="panel panel-custom">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-user"></span> 1. Personal Details</h3>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label for="app-fullname">Full Name (as per college ID) *</label>
+              <input type="text" class="form-control" id="app-fullname" required placeholder="e.g. John Doe">
+            </div>
+
+            <div class="col-md-3 form-group">
+              <label for="app-dob">Date of Birth *</label>
+              <input type="date" class="form-control" id="app-dob" required>
+            </div>
+
+            <div class="col-md-3 form-group">
+              <label for="app-gender">Gender / Hostel Wing *</label>
+              <select class="form-control" id="app-gender" required>
+                <option value="BOYS">BOYS (Boys Hostel)</option>
+                <option value="GIRLS">GIRLS (Girls Hostel)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 form-group">
+              <label for="app-mobile">Mobile Number *</label>
+              <input type="tel" class="form-control" id="app-mobile" placeholder="10-digit mobile number" required>
+            </div>
+
+            <div class="col-md-8 form-group">
+              <label for="app-address">Permanent Residential Address *</label>
+              <input type="text" class="form-control" id="app-address" placeholder="House/Flat No, Street, City, District, PIN Code" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Academic Information -->
+      <div class="panel panel-custom">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-education"></span> 2. Academic & College Details</h3>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-4 form-group">
+              <label for="app-enrollment">Enrollment Number / Roll No *</label>
+              <input type="text" class="form-control" id="app-enrollment" placeholder="e.g. 2300101001" required>
+            </div>
+
+            <div class="col-md-8 form-group">
+              <label for="app-college">College / Institute Name *</label>
+              <input type="text" class="form-control" id="app-college" placeholder="e.g. Government Polytechnic / Engineering College" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 form-group">
+              <label for="app-branch">Engineering Branch *</label>
+              <select class="form-control" id="app-branch" required>
+                <option value="COMPUTER">Computer Engineering (CO)</option>
+                <option value="MECHANICAL">Mechanical Engineering (ME)</option>
+                <option value="CIVIL">Civil Engineering (CE)</option>
+                <option value="ELECTRICAL">Electrical Engineering (EE)</option>
+                <option value="IT">Information Technology (IF)</option>
+              </select>
+            </div>
+
+            <div class="col-md-4 form-group">
+              <label for="app-year">Current Academic Year *</label>
+              <select class="form-control" id="app-year" required>
+                <option value="1">First Year (FY / 1st Year)</option>
+                <option value="2">Second Year (SY / 2nd Year)</option>
+                <option value="3">Third Year (TY / 3rd Year)</option>
+              </select>
+            </div>
+
+            <div class="col-md-4 form-group">
+              <label for="app-admission-year">Academic Batch / Session *</label>
+              <input type="text" class="form-control" id="app-admission-year" value="2026-2027" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Reservation Category -->
+      <div class="panel panel-custom">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-tags"></span> 3. Reservation Quota Category</h3>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label for="app-category">Admission Category *</label>
+              <select class="form-control" id="app-category" required>
+                <option value="OPEN">OPEN / General</option>
+                <option value="OBC">OBC (Other Backward Class)</option>
+                <option value="SC">SC (Scheduled Caste)</option>
+                <option value="ST">ST (Scheduled Tribe)</option>
+                <option value="EWS">EWS (Economically Weaker Section)</option>
+                <option value="VJNT">VJNT / NT</option>
+                <option value="OTHER">Other Quota (Specify below)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 form-group hidden" id="other-category-group">
+              <label for="app-other-category">Specify Other Category</label>
+              <input type="text" class="form-control" id="app-other-category" placeholder="e.g. TFWS, Defence, PwD">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Academic Scores & Aggregate -->
+      <div class="panel panel-custom">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-stats"></span> 4. Qualifying Examination Marks & Aggregate</h3>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <!-- Sem 1 -->
+            <div class="col-md-4">
+              <div class="well well-sm" style="background-color: #f8fafc;">
+                <h5 style="font-weight: 700; color: #1e3a8a; margin-top: 0;">Semester 1 / Previous Year Sem 1</h5>
+                <div class="form-group">
+                  <label for="app-sem1-obtained">Obtained Marks</label>
+                  <input type="number" step="0.01" class="form-control input-sm" id="app-sem1-obtained" placeholder="e.g. 580">
+                </div>
+                <div class="form-group">
+                  <label for="app-sem1-total">Total Maximum Marks</label>
+                  <input type="number" step="0.01" class="form-control input-sm" id="app-sem1-total" placeholder="e.g. 700">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Sem 1 Calculated %</label>
+                  <input type="text" class="form-control input-sm" id="app-sem1-percentage" readonly style="background-color: #fff; font-weight: bold; color: #1e3a8a;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Sem 2 -->
+            <div class="col-md-4">
+              <div class="well well-sm" style="background-color: #f8fafc;">
+                <h5 style="font-weight: 700; color: #1e3a8a; margin-top: 0;">Semester 2 / Previous Year Sem 2</h5>
+                <div class="form-group">
+                  <label for="app-sem2-obtained">Obtained Marks</label>
+                  <input type="number" step="0.01" class="form-control input-sm" id="app-sem2-obtained" placeholder="e.g. 610">
+                </div>
+                <div class="form-group">
+                  <label for="app-sem2-total">Total Maximum Marks</label>
+                  <input type="number" step="0.01" class="form-control input-sm" id="app-sem2-total" placeholder="e.g. 700">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label>Sem 2 Calculated %</label>
+                  <input type="text" class="form-control input-sm" id="app-sem2-percentage" readonly style="background-color: #fff; font-weight: bold; color: #1e3a8a;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Aggregate -->
+            <div class="col-md-4">
+              <div class="well well-sm text-center" style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 25px 15px;">
+                <h4 style="font-weight: 700; color: #1e3a8a; margin-top: 0;">Total Calculated Aggregate</h4>
+                <p class="text-muted small">Merit ranking will be computed using this percentage</p>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <input type="text" class="form-control input-lg text-center" id="app-aggregate" readonly style="font-size: 24px; font-weight: 800; color: #1e40af; background: #fff;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. ATKT / Backlog Details -->
+      <div class="panel panel-custom">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-alert"></span> 5. ATKT / Backlog Status</h3>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-4 form-group">
+              <label for="app-atkt-status">Do you have active ATKT / Backlog? *</label>
+              <select class="form-control" id="app-atkt-status" required>
+                <option value="NO">NO (Clear Passed)</option>
+                <option value="YES">YES (Have Active Backlogs)</option>
+              </select>
+            </div>
+
+            <div class="col-md-8 hidden" id="atkt-details-group">
+              <div class="row">
+                <div class="col-sm-4 form-group">
+                  <label for="app-atkt-subjects">Number of ATKT Subjects</label>
+                  <input type="number" class="form-control" id="app-atkt-subjects" value="0">
+                </div>
+                <div class="col-sm-8 form-group">
+                  <label for="app-atkt-details">Subject Details</label>
+                  <input type="text" class="form-control" id="app-atkt-details" placeholder="e.g. Applied Mathematics-II, Engineering Mechanics">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Actions -->
+      <div class="text-center" style="margin-top: 25px; margin-bottom: 40px;">
+        <button type="submit" id="btn-submit-application" class="btn btn-primary-custom btn-lg" style="padding: 12px 35px; font-size: 16px;">
+          Submit Application & Continue
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+
+  <footer class="app-footer">
+    <div class="container text-center">
+      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/student.js"></script>
+  <script>
+    $(document).ready(function() {
+      initStudentApplication();
+    });
+  </script>
+</body>
+</html>

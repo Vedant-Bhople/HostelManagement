@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard - Hostel Management System</title>
+
+  <!-- Bootstrap 3 CSS -->
+  <link rel="stylesheet" href="../css/bootstrap.min.css">
+  <link rel="stylesheet" href="../css/bootstrap-theme.min.css">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-custom navbar-static-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+          <span class="icon-bar" style="background-color: #fff;"></span>
+        </button>
+        <a class="navbar-brand" href="dashboard.html">
+          <span class="glyphicon glyphicon-lock"></span> HMS Admin Console
+        </a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li class="active"><a href="dashboard.html"><span class="glyphicon glyphicon-dashboard"></span> Dashboard</a></li>
+          <li><a href="applications.html"><span class="glyphicon glyphicon-folder-open"></span> Applications</a></li>
+          <li><a href="merit-list.html"><span class="glyphicon glyphicon-list-alt"></span> Merit List</a></li>
+          <li><a href="allotment.html"><span class="glyphicon glyphicon-bed"></span> Allotment</a></li>
+          <li><a href="students.html"><span class="glyphicon glyphicon-user"></span> Students</a></li>
+          <li><a href="reports.html"><span class="glyphicon glyphicon-stats"></span> Reports</a></li>
+          <li><a href="#" id="btn-nav-logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container page-wrapper">
+
+    <!-- Page Header Box -->
+    <div class="page-header-box">
+      <div class="row">
+        <div class="col-sm-7">
+          <h2>Administrator Overview Dashboard</h2>
+          <p>Logged in as: <strong id="admin-name-display">Warden / Admin</strong></p>
+        </div>
+        <div class="col-sm-5 text-right" style="padding-top: 10px;">
+          <button id="btn-generate-210-seats" class="btn btn-primary-custom">
+            <span class="glyphicon glyphicon-th"></span> Initialize 210 Hostel Seats
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="alert-container"></div>
+
+    <!-- 1st Row: Application Stats -->
+    <h4 style="font-weight: 700; color: #1e3a8a; margin-bottom: 15px;">Admission Applications</h4>
+    <div class="row">
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card primary">
+          <div class="metric-value" id="stat-total-apps">0</div>
+          <div class="metric-label">Total Applications</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card warning">
+          <div class="metric-value" id="stat-pending-apps">0</div>
+          <div class="metric-label">Pending Verification</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card success">
+          <div class="metric-value" id="stat-approved-apps">0</div>
+          <div class="metric-label">Approved Applications</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card danger">
+          <div class="metric-value" id="stat-rejected-apps">0</div>
+          <div class="metric-label">Rejected Applications</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2nd Row: Allotments & Records Stats -->
+    <h4 style="font-weight: 700; color: #1e3a8a; margin: 20px 0 15px 0;">Seat Allotment & Infrastructure</h4>
+    <div class="row">
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card primary">
+          <div class="metric-value" id="stat-total-allotments">0</div>
+          <div class="metric-label">Total Allotments</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card warning">
+          <div class="metric-value" id="stat-allotted-seats">0</div>
+          <div class="metric-label">Pending Confirmations</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card success">
+          <div class="metric-value" id="stat-accepted-seats">0</div>
+          <div class="metric-label">Confirmed / Accepted Seats</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="metric-card info">
+          <div class="metric-value" id="stat-total-merit">0</div>
+          <div class="metric-label">Merit Lists Generated</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Navigation Panels -->
+    <div class="row" style="margin-top: 20px;">
+      <div class="col-md-4">
+        <div class="panel panel-custom">
+          <div class="panel-body text-center">
+            <span class="glyphicon glyphicon-check" style="font-size: 32px; color: #1e40af; margin-bottom: 10px;"></span>
+            <h4 style="font-weight: 700;">Review Applications</h4>
+            <p class="text-muted small">Verify student documents, semester scores, and approve or reject applications.</p>
+            <a href="applications.html" class="btn btn-default btn-block">Go to Applications &raquo;</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="panel panel-custom">
+          <div class="panel-body text-center">
+            <span class="glyphicon glyphicon-sort-by-attributes-alt" style="font-size: 32px; color: #10b981; margin-bottom: 10px;"></span>
+            <h4 style="font-weight: 700;">Merit Ranking Engine</h4>
+            <p class="text-muted small">Generate branch & class merit lists sorted by aggregate scores and publish them.</p>
+            <a href="merit-list.html" class="btn btn-default btn-block">Go to Merit Lists &raquo;</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="panel panel-custom">
+          <div class="panel-body text-center">
+            <span class="glyphicon glyphicon-bed" style="font-size: 32px; color: #f59e0b; margin-bottom: 10px;"></span>
+            <h4 style="font-weight: 700;">Seat Allotment & Vacancy</h4>
+            <p class="text-muted small">Execute category quota allocation, inspect vacancies, and manage waiting list queue.</p>
+            <a href="allotment.html" class="btn btn-default btn-block">Go to Allotments &raquo;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="app-footer">
+    <div class="container text-center">
+      <p>&copy; 2026 Hostel Management System. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    $(document).ready(function() {
+      initAdminDashboard();
+    });
+  </script>
+</body>
+</html>
