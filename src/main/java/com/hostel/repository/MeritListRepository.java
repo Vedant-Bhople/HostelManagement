@@ -1,7 +1,8 @@
-
 package com.hostel.repository;
 
 import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.hostel.model.Application;
 import com.hostel.model.MeritList;
