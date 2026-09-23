@@ -7,8 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.hostel.model.Application;
 import com.hostel.model.User;
 
-public interface ApplicationRepository
-        extends JpaRepository<Application, Long> {
+public interface ApplicationRepository extends JpaRepository<Application, Long> {
 
     // =====================================================
     // GET APPLICATIONS BY USER
@@ -62,6 +61,8 @@ public interface ApplicationRepository
     // =====================================================
 
     List<Application> findByYear(String year);
+
+    List<Application> findByYearAndStatus(String year, String status);
 
 
     // =====================================================

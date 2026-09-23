@@ -17,7 +17,7 @@ public class ReservationPolicy {
         // =====================================================
         // BOYS HOSTEL - 11 SEATS TOTAL
         // =====================================================
-        // OPEN / SEBC : 6 seats
+        // OPEN / SEBC : 6 seats (Open competition for all eligible students by merit)
         BOYS_QUOTAS.add(new ReservationQuota(
                 "OPEN/SEBC",
                 6,
@@ -47,25 +47,27 @@ public class ReservationPolicy {
                 CategoryNormalizer.ST
         ));
 
-        // NT : 1 seat
+        // VJ / NT : 1 seat
         BOYS_QUOTAS.add(new ReservationQuota(
-                "NT",
+                "VJ/NT",
                 1,
                 true,
                 "NT",
+                CategoryNormalizer.VJNT,
                 CategoryNormalizer.NT
         ));
 
         // =====================================================
         // GIRLS HOSTEL - 3 SEATS TOTAL
         // =====================================================
-        // OPEN : 1 seat
+        // OPEN / SEBC : 1 seat (Open competition for all eligible students by merit)
         GIRLS_QUOTAS.add(new ReservationQuota(
-                "OPEN",
+                "OPEN/SEBC",
                 1,
                 false,
                 "OP",
-                CategoryNormalizer.OPEN
+                CategoryNormalizer.OPEN,
+                CategoryNormalizer.SEBC
         ));
 
         // OBC / SBC : 1 seat
@@ -78,15 +80,16 @@ public class ReservationPolicy {
                 CategoryNormalizer.SBC
         ));
 
-        // AGAINST_NT_SC_ST : 1 seat
+        // SC / ST / VJ / NT : 1 seat
         GIRLS_QUOTAS.add(new ReservationQuota(
-                "AGAINST_NT_SC_ST",
+                "SC/ST/VJ/NT",
                 1,
                 true,
                 "RES",
-                CategoryNormalizer.NT,
                 CategoryNormalizer.SC,
-                CategoryNormalizer.ST
+                CategoryNormalizer.ST,
+                CategoryNormalizer.VJNT,
+                CategoryNormalizer.NT
         ));
     }
 

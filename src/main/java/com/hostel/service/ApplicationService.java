@@ -61,6 +61,21 @@ public class ApplicationService {
 
         application.setUser(user);
 
+        // Validate Category
+        if (application.getCategory() == null || application.getCategory().trim().isEmpty()) {
+            throw new RuntimeException("Category is required. Allowed categories: OPEN, OBC, SC, ST, VJNT, NT, SEBC");
+        }
+
+        String inputCategory = application.getCategory().trim().toUpperCase();
+        if ("EWS".equals(inputCategory)) {
+            throw new RuntimeException("Invalid category: EWS is not accepted. Allowed categories: OPEN, OBC, SC, ST, VJNT, NT, SEBC");
+        }
+
+        if (!com.hostel.service.reservation.CategoryNormalizer.isValidCategory(inputCategory)) {
+            throw new RuntimeException("Invalid category: '" + application.getCategory() + "'. Allowed categories: OPEN, OBC, SC, ST, VJNT, NT, SEBC");
+        }
+        application.setCategory(inputCategory);
+
         // Calculate Semester 1 percentage
         if (application.getSem1Obtained() != null
                 && application.getSem1Total() != null
