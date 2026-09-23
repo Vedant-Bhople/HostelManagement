@@ -52,12 +52,25 @@ public class UserController {
     // Login
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestParam String email,
-            @RequestParam String password) {
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String password,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
 
         try {
+            String loginEmail = (email != null && !email.trim().isEmpty()) 
+                    ? email.trim() 
+                    : (body != null ? body.get("email") : null);
 
-            User user = userService.login(email, password);
+            String loginPassword = (password != null && !password.trim().isEmpty()) 
+                    ? password.trim() 
+                    : (body != null ? body.get("password") : null);
+
+            if (loginEmail == null || loginPassword == null) {
+                return ResponseEntity.badRequest()
+                        .body("Email and password are required");
+            }
+
+            User user = userService.login(loginEmail, loginPassword);
 
             return ResponseEntity.ok(user);
 
@@ -69,7 +82,7 @@ public class UserController {
     }
 
     // Get User
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public ResponseEntity<?> getUser(@PathVariable Long id) {
 
         try {

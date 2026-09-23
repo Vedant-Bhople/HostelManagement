@@ -144,6 +144,7 @@ const API = {
     return $.ajax({
       url: `${API_BASE}${endpoint}?${$.param(queryParams)}`,
       method: 'POST',
+      data: queryParams,
       dataType: 'json'
     });
   },
