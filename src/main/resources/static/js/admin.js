@@ -54,65 +54,7 @@ function initAdminLogin() {
 }
 
 // =========================================================================
-// 2. ADMIN REGISTRATION
-// =========================================================================
-
-function initAdminRegister() {
-    $('#form-admin-register').on('submit', function (e) {
-        e.preventDefault();
-
-        const name = $('#admin-reg-name').val().trim();
-        const email = $('#admin-reg-email').val().trim();
-        const password = $('#admin-reg-password').val().trim();
-        const confirmPassword = $('#admin-reg-confirm-password').val().trim();
-
-        if (!name || !email || !password) {
-            showAlert('#alert-container', 'Please fill in all required fields.', 'warning');
-            return;
-        }
-
-        if (password.length < 6) {
-            showAlert('#alert-container', 'Password must be at least 6 characters.', 'warning');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            showAlert('#alert-container', 'Passwords do not match.', 'warning');
-            return;
-        }
-
-        const btn = $('#btn-admin-register');
-
-        btn.prop('disabled', true).text('Creating Admin Account...');
-
-        const payload = {
-            name: name,
-            email: email,
-            password: password,
-            role: 'ADMIN'
-        };
-
-        API.post('/users/register-admin', payload)
-        .done(function (user) {
-            setUserSession(user);
-
-            alert('Admin account created successfully! Redirecting to Dashboard...');
-            window.location.href = 'dashboard.html';
-        })
-        .fail(function (xhr) {
-            const errorMsg =
-                xhr.responseText ||
-                'Admin registration failed. Email may already be in use.';
-
-            showAlert('#alert-container', errorMsg, 'danger');
-
-            btn.prop('disabled', false).text('Register as Administrator');
-        });
-    });
-}
-
-// =========================================================================
-// 3. ADMIN DASHBOARD
+// 2. ADMIN DASHBOARD
 // =========================================================================
 
 function initAdminDashboard() {

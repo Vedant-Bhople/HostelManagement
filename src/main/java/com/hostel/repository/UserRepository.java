@@ -7,4 +7,6 @@ import com.hostel.model.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     User findByEmail(String email);
+
+    boolean existsByRole(String role);
 }

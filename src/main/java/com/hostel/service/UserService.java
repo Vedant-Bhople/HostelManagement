@@ -24,18 +24,6 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // Register Admin
-    public User registerAdmin(User user) {
-
-        if (userRepository.findByEmail(user.getEmail()) != null) {
-            throw new RuntimeException("Email already registered");
-        }
-
-        user.setRole("ADMIN");
-
-        return userRepository.save(user);
-    }
-
     // Login
     public User login(String email, String password) {
 

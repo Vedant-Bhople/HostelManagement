@@ -32,43 +32,16 @@ public class UserController {
         }
     }
 
-    // Admin Registration
-    @PostMapping("/register-admin")
-    public ResponseEntity<?> registerAdmin(@RequestBody User user) {
-
-        try {
-
-            User savedUser = userService.registerAdmin(user);
-
-            return ResponseEntity.ok(savedUser);
-
-        } catch (Exception e) {
-
-            return ResponseEntity.badRequest()
-                    .body(e.getMessage());
-        }
-    }
-
     // Login
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String password,
-            @RequestBody(required = false) java.util.Map<String, String> body) {
+            @RequestParam String email,
+            @RequestParam String password) {
 
         try {
-            String loginEmail = (email != null && !email.trim().isEmpty()) 
-                    ? email.trim() 
-                    : (body != null ? body.get("email") : null);
 
-            String loginPassword = (password != null && !password.trim().isEmpty()) 
-                    ? password.trim() 
-                    : (body != null ? body.get("password") : null);
-
-            if (loginEmail == null || loginPassword == null) {
-                return ResponseEntity.badRequest()
-                        .body("Email and password are required");
-            }
+            String loginEmail = email != null ? email.trim() : "";
+            String loginPassword = password != null ? password.trim() : "";
 
             User user = userService.login(loginEmail, loginPassword);
 
