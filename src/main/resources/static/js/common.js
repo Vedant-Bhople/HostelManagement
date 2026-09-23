@@ -142,7 +142,7 @@ const API = {
 
   postParams: function (endpoint, queryParams) {
     return $.ajax({
-      url: `${API_BASE}${endpoint}?${$.param(queryParams)}`,
+      url: `${API_BASE}${endpoint}`,
       method: 'POST',
       data: queryParams,
       dataType: 'json'

@@ -1,5 +1,7 @@
 package com.hostel.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +13,8 @@ import com.hostel.service.UserService;
 @RequestMapping("/api/users")
 @CrossOrigin
 public class UserController {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     @Autowired
     private UserService userService;
@@ -39,15 +43,22 @@ public class UserController {
             @RequestParam String password) {
 
         try {
+            logger.info("LOGIN DEBUG email received='{}'", email);
 
             String loginEmail = email != null ? email.trim() : "";
-            String loginPassword = password != null ? password.trim() : "";
+            String loginPassword = password != null ? password : "";
+
+            logger.info("LOGIN DEBUG trimmed email='{}'", loginEmail);
 
             User user = userService.login(loginEmail, loginPassword);
+
+            logger.info("LOGIN DEBUG user found={}, role={}", user != null, user != null ? user.getRole() : null);
 
             return ResponseEntity.ok(user);
 
         } catch (Exception e) {
+            String sanitizedEmail = email != null ? email.trim() : "null";
+            logger.warn("LOGIN DEBUG failed for email='{}': {}", sanitizedEmail, e.getMessage());
 
             return ResponseEntity.badRequest()
                     .body(e.getMessage());

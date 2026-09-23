@@ -1,5 +1,7 @@
 package com.hostel.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -8,6 +10,8 @@ import com.hostel.repository.UserRepository;
 
 @Service
 public class UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -27,7 +31,15 @@ public class UserService {
     // Login
     public User login(String email, String password) {
 
-        User user = userRepository.findByEmail(email);
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        String searchEmail = email.trim();
+        User user = userRepository.findByEmail(searchEmail);
+
+        logger.info("LOGIN DEBUG in UserService: findByEmail('{}') returned user={}, role={}", 
+                searchEmail, user != null, user != null ? user.getRole() : null);
 
         if (user == null) {
             throw new RuntimeException("User not found");
