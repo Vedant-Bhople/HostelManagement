@@ -15,21 +15,20 @@ public class ReservationPolicy {
 
     static {
         // =====================================================
-        // BOYS HOSTEL - 11 SEATS TOTAL
+        // BOYS HOSTEL - 11 SEATS PER BRANCH / YEAR (TOTAL 165)
         // =====================================================
-        // OPEN / SEBC : 6 seats (Open competition for all eligible students by merit)
+        // OPEN : 6 seats (Open competition for all eligible students by merit)
         BOYS_QUOTAS.add(new ReservationQuota(
-                "OPEN/SEBC",
+                "OPEN",
                 6,
                 false,
                 "OP",
-                CategoryNormalizer.OPEN,
-                CategoryNormalizer.SEBC
+                CategoryNormalizer.OPEN
         ));
 
-        // OBC / SBC : 2 seats
+        // OBC : 2 seats (OBC / SBC)
         BOYS_QUOTAS.add(new ReservationQuota(
-                "OBC/SBC",
+                "OBC",
                 2,
                 true,
                 "OBC",
@@ -37,7 +36,7 @@ public class ReservationPolicy {
                 CategoryNormalizer.SBC
         ));
 
-        // SC / ST : 2 seats
+        // SC/ST : 2 seats (SC and ST)
         BOYS_QUOTAS.add(new ReservationQuota(
                 "SC/ST",
                 2,
@@ -47,9 +46,9 @@ public class ReservationPolicy {
                 CategoryNormalizer.ST
         ));
 
-        // VJ / NT : 1 seat
+        // NT : 1 seat (NT and VJNT)
         BOYS_QUOTAS.add(new ReservationQuota(
-                "VJ/NT",
+                "NT",
                 1,
                 true,
                 "NT",
@@ -58,21 +57,20 @@ public class ReservationPolicy {
         ));
 
         // =====================================================
-        // GIRLS HOSTEL - 3 SEATS TOTAL
+        // GIRLS HOSTEL - 3 SEATS PER BRANCH / YEAR (TOTAL 45)
         // =====================================================
-        // OPEN / SEBC : 1 seat (Open competition for all eligible students by merit)
+        // OPEN : 1 seat (Open competition for all eligible students by merit)
         GIRLS_QUOTAS.add(new ReservationQuota(
-                "OPEN/SEBC",
+                "OPEN",
                 1,
                 false,
                 "OP",
-                CategoryNormalizer.OPEN,
-                CategoryNormalizer.SEBC
+                CategoryNormalizer.OPEN
         ));
 
-        // OBC / SBC : 1 seat
+        // OBC : 1 seat (OBC / SBC)
         GIRLS_QUOTAS.add(new ReservationQuota(
-                "OBC/SBC",
+                "OBC",
                 1,
                 true,
                 "OBC",
@@ -80,16 +78,18 @@ public class ReservationPolicy {
                 CategoryNormalizer.SBC
         ));
 
-        // SC / ST / VJ / NT : 1 seat
+        // Other Reserved : 1 seat (SC / ST / NT / VJNT / SBC / SEBC)
         GIRLS_QUOTAS.add(new ReservationQuota(
-                "SC/ST/VJ/NT",
+                "Other Reserved",
                 1,
                 true,
                 "RES",
                 CategoryNormalizer.SC,
                 CategoryNormalizer.ST,
                 CategoryNormalizer.VJNT,
-                CategoryNormalizer.NT
+                CategoryNormalizer.NT,
+                CategoryNormalizer.SBC,
+                CategoryNormalizer.SEBC
         ));
     }
 

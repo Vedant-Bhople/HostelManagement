@@ -24,4 +24,4 @@ target/
 application-local.properties
 
 # Uploaded files
-uploads/
+uploads/.metadata/

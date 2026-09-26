@@ -56,36 +56,26 @@ public class HostelSeatService {
 
         // =================================================
         // BOYS RESERVATION
+        // 11 seats per branch/year (Total 165)
+        // OPEN  = 6 (Merit based)
+        // OBC   = 2
+        // SC/ST = 2 (SC 1, ST 1)
+        // NT    = 1
+        // Total = 11
         // =================================================
 
-        /*
-         * 11 seats per branch/year
-         *
-         * SC   = 1
-         * ST   = 1
-         * OBC  = 2
-         * OPEN = 7
-         *
-         * Total = 11
-         */
-
         String[] boysCategories = {
-
+                "OPEN",
+                "OPEN",
+                "OPEN",
+                "OPEN",
+                "OPEN",
+                "OPEN",
+                "OBC",
+                "OBC",
                 "SC",
-
                 "ST",
-
-                "OBC",
-                "OBC",
-
-                "OPEN",
-                "OPEN",
-                "OPEN",
-                "OPEN",
-                "OPEN",
-                "OPEN",
-                "OPEN"
-
+                "NT"
         };
 
 
@@ -147,29 +137,18 @@ public class HostelSeatService {
 
 
         // =================================================
-        // GIRLS HOSTEL
+        // GIRLS RESERVATION
+        // 3 seats per branch/year (Total 45)
+        // OPEN = 1 (Merit based)
+        // OBC  = 1
+        // Other Reserved = 1
+        // Total = 3
         // =================================================
 
-        /*
-         * Girls have only 3 seats
-         * per branch/year.
-         *
-         * Reservation distribution is kept
-         * separately because 1+1+2+7 = 11
-         * cannot be applied to a 3-seat pool.
-         *
-         * For now these are marked OPEN.
-         *
-         * We will configure the Girls reservation
-         * roster separately.
-         */
-
         String[] girlsCategories = {
-
                 "OPEN",
-                "OPEN",
-                "OPEN"
-
+                "OBC",
+                "RESERVED"
         };
 
 

@@ -20,6 +20,22 @@ public interface AllotmentRepository extends JpaRepository<Allotment, Long> {
     );
 
     // =====================================================
+    // GET ALLOTMENT LIST FOR COMBINED YEAR
+    // Gender + Year
+    // =====================================================
+
+    List<Allotment> findByGenderAndYearOrderByMeritRankAsc(
+            String gender,
+            String year
+    );
+
+    List<Allotment> findByGenderAndYearAndAllotmentRoundOrderByMeritRankAsc(
+            String gender,
+            String year,
+            String allotmentRound
+    );
+
+    // =====================================================
     // GET ALLOTMENT BY APPLICATION
     // =====================================================
 

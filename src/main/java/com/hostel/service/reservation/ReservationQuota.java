@@ -54,8 +54,12 @@ public class ReservationQuota {
 
     /**
      * Checks if a student with the given common category is eligible for this quota.
+     * For OPEN / non-reserved quotas, all students are eligible purely on merit.
      */
     public boolean isEligible(String commonCategory) {
+        if (!this.reserved) {
+            return true; // OPEN quota is open to all applicants purely on merit
+        }
         if (commonCategory == null) {
             return false;
         }

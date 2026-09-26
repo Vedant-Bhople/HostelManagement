@@ -38,7 +38,7 @@ public class AllotmentService {
 
 
     // =====================================================
-    // STAGE 1: GENERATE NORMAL ALLOTMENT
+    // STAGE 1: GENERATE ALLOTMENT (GENDER + YEAR or GENDER + BRANCH + YEAR)
     // =====================================================
 
     @Transactional
@@ -47,46 +47,72 @@ public class AllotmentService {
             String branch,
             String year) {
 
+        String normalizedGender = "GIRLS".equalsIgnoreCase(gender) ? "GIRLS" : "BOYS";
+        String effectiveYear = (year != null && !year.trim().isEmpty()) ? year.trim() : "1";
+
+        if (branch == null || branch.trim().isEmpty() || "ALL".equalsIgnoreCase(branch.trim())) {
+            List<Allotment> allBranchAllotments = new ArrayList<>();
+            for (String b : ReservationPolicy.ALL_BRANCHES) {
+                List<Allotment> bList = generateBranchAllotment(normalizedGender, b, effectiveYear);
+                allBranchAllotments.addAll(bList);
+            }
+            if (allBranchAllotments.isEmpty()) {
+                throw new RuntimeException(
+                        "No published merit list found for any branch in "
+                        + normalizedGender + " - Year " + effectiveYear
+                        + ". Please generate and publish the merit list first."
+                );
+            }
+            return allBranchAllotments;
+        }
+
+        List<Allotment> singleBranchList = generateBranchAllotment(normalizedGender, branch.trim().toUpperCase(), effectiveYear);
+        if (singleBranchList.isEmpty()) {
+            throw new RuntimeException(
+                    "Merit list not published or no eligible applicants found for "
+                    + normalizedGender + " - " + branch + " - Year " + effectiveYear
+            );
+        }
+        return singleBranchList;
+    }
+
+
+    // =====================================================
+    // STAGE 1 HELPER: GENERATE ALLOTMENT FOR SINGLE BRANCH
+    // =====================================================
+
+    @Transactional
+    public List<Allotment> generateBranchAllotment(
+            String gender,
+            String branch,
+            String year) {
+
+        String normalizedGender = "GIRLS".equalsIgnoreCase(gender) ? "GIRLS" : "BOYS";
+        String normalizedBranch = branch.trim().toUpperCase();
+        String effectiveYear = (year != null && !year.trim().isEmpty()) ? year.trim() : "1";
+
         List<MeritList> meritList =
                 meritListRepository
                 .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                        gender,
-                        branch,
-                        year
+                        normalizedGender,
+                        normalizedBranch,
+                        effectiveYear
                 );
 
-        if (meritList == null || meritList.isEmpty()) {
-            throw new RuntimeException(
-                    "Merit list not found for "
-                    + gender + " - "
-                    + branch + " - "
-                    + year
-            );
-        }
-
-        // Check for published students
-        List<MeritList> publishedStudents = meritList.stream()
+        // Filter published students in strict merit rank order
+        List<MeritList> publishedStudents = (meritList != null) ? meritList.stream()
                 .filter(MeritList::isPublished)
                 .sorted(Comparator.comparing(MeritList::getMeritRank, Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(MeritList::getAggregate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : new ArrayList<>();
 
-        if (publishedStudents.isEmpty()) {
-            throw new RuntimeException(
-                    "Merit list is not published yet for "
-                    + gender + " - "
-                    + branch + " - "
-                    + year
-            );
-        }
-
-        // Delete old allotments for this wing/branch/year
+        // Delete old regular allotments for this wing/branch/year
         List<Allotment> oldAllotments =
                 allotmentRepository
                 .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                        gender,
-                        branch,
-                        year
+                        normalizedGender,
+                        normalizedBranch,
+                        effectiveYear
                 );
 
         if (oldAllotments != null && !oldAllotments.isEmpty()) {
@@ -94,14 +120,56 @@ public class AllotmentService {
             allotmentRepository.flush();
         }
 
+        if (publishedStudents.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         List<Allotment> allotments = new ArrayList<>();
-        String hostelCode = "BOYS".equalsIgnoreCase(gender) ? "B" : "G";
-        List<ReservationQuota> quotas = ReservationPolicy.getQuotasForGender(gender);
+        String hostelCode = "BOYS".equalsIgnoreCase(normalizedGender) ? "B" : "G";
+        List<ReservationQuota> quotas = ReservationPolicy.getQuotasForGender(normalizedGender);
 
-        int totalSeatsAllottedCounter = 0;
+        // -------------------------------------------------
+        // STEP 1: ALLOCATE OPEN SEATS BASED PURELY ON MERIT
+        // OPEN seats are open to ALL students regardless of category
+        // -------------------------------------------------
+        ReservationQuota openQuota = quotas.stream()
+                .filter(q -> !q.isReserved())
+                .findFirst()
+                .orElse(new ReservationQuota("OPEN", "BOYS".equalsIgnoreCase(normalizedGender) ? 6 : 1, false, "OP", CategoryNormalizer.OPEN));
 
-        // Stage 1: Allocate quota-wise according to reservation policy
+        int openCapacity = openQuota.getSeatCapacity();
+        int openAllottedCount = 0;
+
+        for (MeritList merit : publishedStudents) {
+            if (openAllottedCount >= openCapacity) {
+                break;
+            }
+
+            openAllottedCount++;
+            Allotment allotment = createAllotmentRecord(
+                    merit,
+                    "OPEN",
+                    hostelCode,
+                    normalizedBranch,
+                    effectiveYear,
+                    "OP",
+                    openAllottedCount,
+                    "ALLOTTED",
+                    false
+            );
+
+            allotments.add(allotment);
+        }
+
+        // -------------------------------------------------
+        // STEP 2: ALLOCATE RESERVED SEATS
+        // To eligible remaining students who did NOT receive OPEN
+        // -------------------------------------------------
         for (ReservationQuota quota : quotas) {
+            if (!quota.isReserved()) {
+                continue;
+            }
+
             int capacity = quota.getSeatCapacity();
             int allocatedForThisQuota = 0;
 
@@ -110,24 +178,23 @@ public class AllotmentService {
                     break;
                 }
 
-                // Check if already allotted
+                // Check if already allotted in OPEN or previous reserved quota
                 if (isAlreadyAllotted(merit, allotments)) {
                     continue;
                 }
 
                 String commonCat = CategoryNormalizer.normalize(merit.getCategory());
 
-                // Check eligibility for this quota
+                // Check eligibility for this reserved quota
                 if (quota.isEligible(commonCat)) {
-                    totalSeatsAllottedCounter++;
                     allocatedForThisQuota++;
 
                     Allotment allotment = createAllotmentRecord(
                             merit,
                             quota.getName(),
                             hostelCode,
-                            branch,
-                            year,
+                            normalizedBranch,
+                            effectiveYear,
                             quota.getSeatCategoryCode(),
                             allocatedForThisQuota,
                             "ALLOTTED",
@@ -137,9 +204,12 @@ public class AllotmentService {
                     allotments.add(allotment);
                 }
             }
+            // Note: If allocatedForThisQuota < capacity, the remaining reserved seats stay VACANT!
         }
 
-        // Stage 1: Add remaining unallocated students to WAITING list in strict merit order
+        // -------------------------------------------------
+        // STEP 3: REMAINING STUDENTS -> WAITING LIST
+        // -------------------------------------------------
         int waitingCounter = 0;
         for (MeritList merit : publishedStudents) {
             if (isAlreadyAllotted(merit, allotments)) {
@@ -150,8 +220,8 @@ public class AllotmentService {
             Allotment waiting = createWaitingRecord(
                     merit,
                     hostelCode,
-                    branch,
-                    year,
+                    normalizedBranch,
+                    effectiveYear,
                     waitingCounter
             );
 
@@ -186,114 +256,138 @@ public class AllotmentService {
             String branch,
             String year) {
 
-        List<Allotment> currentAllotments =
-                allotmentRepository
-                .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                        gender,
-                        branch,
-                        year
+        String normalizedGender = "GIRLS".equalsIgnoreCase(gender) ? "GIRLS" : "BOYS";
+        String effectiveYear = (year != null && !year.trim().isEmpty()) ? year.trim() : "1";
+
+        List<String> branchesToProcess = new ArrayList<>();
+        if (branch == null || branch.trim().isEmpty() || "ALL".equalsIgnoreCase(branch.trim())) {
+            branchesToProcess.addAll(ReservationPolicy.ALL_BRANCHES);
+        } else {
+            branchesToProcess.add(branch.trim().toUpperCase());
+        }
+
+        List<Allotment> totalUpdatedAllotments = new ArrayList<>();
+        int totalConvertedCount = 0;
+
+        for (String b : branchesToProcess) {
+            List<Allotment> currentAllotments =
+                    allotmentRepository
+                    .findByGenderAndBranchAndYearOrderByMeritRankAsc(
+                            normalizedGender,
+                            b,
+                            effectiveYear
+                    );
+
+            if (currentAllotments == null || currentAllotments.isEmpty()) {
+                continue;
+            }
+
+            // Check if conversion was already performed for this branch cycle
+            boolean alreadyConverted = currentAllotments.stream()
+                    .anyMatch(a -> Boolean.TRUE.equals(a.getIsConverted()));
+
+            if (alreadyConverted) {
+                totalUpdatedAllotments.addAll(currentAllotments);
+                continue;
+            }
+
+            List<ReservationQuota> quotas = ReservationPolicy.getQuotasForGender(normalizedGender);
+
+            // Calculate unused capacity in reserved quotas for this branch
+            int totalUnusedReservedSeats = 0;
+            for (ReservationQuota quota : quotas) {
+                if (quota.isReserved()) {
+                    long occupiedCount = currentAllotments.stream()
+                            .filter(a -> quota.getName().equalsIgnoreCase(a.getAllotmentCategory()))
+                            .filter(a -> "ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus())
+                                    || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()))
+                            .count();
+
+                    int unusedInQuota = (int) Math.max(0, quota.getSeatCapacity() - occupiedCount);
+                    totalUnusedReservedSeats += unusedInQuota;
+                }
+            }
+
+            if (totalUnusedReservedSeats <= 0) {
+                totalUpdatedAllotments.addAll(currentAllotments);
+                continue;
+            }
+
+            // Find WAITING students sorted strictly by meritRank ASC
+            List<Allotment> waitingStudents = currentAllotments.stream()
+                    .filter(a -> "WAITING".equalsIgnoreCase(a.getAllotmentStatus()))
+                    .sorted(Comparator.comparing(Allotment::getMeritRank, Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(Allotment::getAggregate, Comparator.nullsLast(Comparator.reverseOrder())))
+                    .collect(Collectors.toList());
+
+            if (waitingStudents.isEmpty()) {
+                totalUpdatedAllotments.addAll(currentAllotments);
+                continue;
+            }
+
+            // Determine starting index for converted OPEN seat numbering
+            long currentOpenSeatsCount = currentAllotments.stream()
+                    .filter(a -> a.getAllotmentCategory() != null && a.getAllotmentCategory().toUpperCase().contains("OPEN"))
+                    .filter(a -> !"WAITING".equalsIgnoreCase(a.getAllotmentStatus()))
+                    .count();
+
+            int openSeatIndex = (int) currentOpenSeatsCount;
+            String hostelCode = "BOYS".equalsIgnoreCase(normalizedGender) ? "B" : "G";
+            int seatsToConvert = Math.min(totalUnusedReservedSeats, waitingStudents.size());
+
+            List<Allotment> newlyAllotted = new ArrayList<>();
+
+            for (int i = 0; i < seatsToConvert; i++) {
+                Allotment studentToAllot = waitingStudents.get(i);
+                openSeatIndex++;
+
+                studentToAllot.setAllotmentStatus("ALLOTTED");
+                studentToAllot.setAllotmentCategory("OPEN");
+                studentToAllot.setIsConverted(true);
+                studentToAllot.setSeatNumber(
+                        generateSeatNumber(
+                                hostelCode,
+                                b,
+                                effectiveYear,
+                                "OP",
+                                openSeatIndex
+                        )
                 );
 
-        if (currentAllotments == null || currentAllotments.isEmpty()) {
+                newlyAllotted.add(studentToAllot);
+                totalConvertedCount++;
+            }
+
+            // Update waiting numbers for remaining waiting students
+            int remainingWaitingNumber = 1;
+            for (int i = seatsToConvert; i < waitingStudents.size(); i++) {
+                Allotment remainingStudent = waitingStudents.get(i);
+                remainingStudent.setSeatNumber(String.format("WAITING-%02d", remainingWaitingNumber++));
+            }
+
+            // Save updated allotment state for this branch
+            List<Allotment> updated = allotmentRepository.saveAll(currentAllotments);
+            totalUpdatedAllotments.addAll(updated);
+
+            // Send email notifications to converted students
+            try {
+                for (Allotment item : newlyAllotted) {
+                    emailService.sendAllotmentEmail(item);
+                }
+            } catch (Exception e) {
+                System.out.println("Email notification notice: " + e.getMessage());
+            }
+        }
+
+        if (totalConvertedCount == 0 && totalUpdatedAllotments.isEmpty()) {
             throw new RuntimeException(
-                    "No existing allotment found for "
-                    + gender + " - " + branch + " - " + year
+                    "No regular allotments found to convert for "
+                    + normalizedGender + " - Year " + effectiveYear
                     + ". Please run Normal Allotment first."
             );
         }
 
-        // Check if conversion was already performed for this cycle
-        boolean alreadyConverted = currentAllotments.stream()
-                .anyMatch(a -> Boolean.TRUE.equals(a.getIsConverted()));
-
-        if (alreadyConverted) {
-            throw new RuntimeException(
-                    "Unused reserved seats have already been converted to OPEN for this allotment cycle."
-            );
-        }
-
-        List<ReservationQuota> quotas = ReservationPolicy.getQuotasForGender(gender);
-
-        // Calculate unused capacity in reserved quotas
-        int totalUnusedReservedSeats = 0;
-        for (ReservationQuota quota : quotas) {
-            if (quota.isReserved()) {
-                long occupiedCount = currentAllotments.stream()
-                        .filter(a -> quota.getName().equalsIgnoreCase(a.getAllotmentCategory()))
-                        .filter(a -> "ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus())
-                                || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()))
-                        .count();
-
-                int unusedInQuota = (int) Math.max(0, quota.getSeatCapacity() - occupiedCount);
-                totalUnusedReservedSeats += unusedInQuota;
-            }
-        }
-
-        if (totalUnusedReservedSeats <= 0) {
-            throw new RuntimeException(
-                    "All reserved seats are currently occupied. There are 0 unused reserved seats to convert."
-            );
-        }
-
-        // Find WAITING students sorted strictly by meritRank ASC
-        List<Allotment> waitingStudents = currentAllotments.stream()
-                .filter(a -> "WAITING".equalsIgnoreCase(a.getAllotmentStatus()))
-                .sorted(Comparator.comparing(Allotment::getMeritRank, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(Allotment::getAggregate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
-
-        if (waitingStudents.isEmpty()) {
-            throw new RuntimeException(
-                    "There are " + totalUnusedReservedSeats
-                    + " unused reserved seats, but no waiting students in the queue to allocate."
-            );
-        }
-
-        // Determine starting index for converted OPEN seat numbering
-        long currentOpenSeatsCount = currentAllotments.stream()
-                .filter(a -> a.getAllotmentCategory() != null && a.getAllotmentCategory().toUpperCase().contains("OPEN"))
-                .filter(a -> !"WAITING".equalsIgnoreCase(a.getAllotmentStatus()))
-                .count();
-
-        int openSeatIndex = (int) currentOpenSeatsCount;
-        String hostelCode = "BOYS".equalsIgnoreCase(gender) ? "B" : "G";
-        int seatsToConvert = Math.min(totalUnusedReservedSeats, waitingStudents.size());
-
-        List<Allotment> newlyAllotted = new ArrayList<>();
-
-        for (int i = 0; i < seatsToConvert; i++) {
-            Allotment studentToAllot = waitingStudents.get(i);
-            openSeatIndex++;
-
-            studentToAllot.setAllotmentStatus("ALLOTTED");
-            studentToAllot.setAllotmentCategory("OPEN");
-            studentToAllot.setIsConverted(true);
-            studentToAllot.setSeatNumber(
-                    generateSeatNumber(
-                            hostelCode,
-                            branch,
-                            year,
-                            "OP",
-                            openSeatIndex
-                    )
-            );
-
-            newlyAllotted.add(studentToAllot);
-        }
-
-        // Save updated allotment state
-        List<Allotment> updatedAllotments = allotmentRepository.saveAll(currentAllotments);
-
-        // Send email notifications to converted students
-        try {
-            for (Allotment item : newlyAllotted) {
-                emailService.sendAllotmentEmail(item);
-            }
-        } catch (Exception e) {
-            System.out.println("Email notification notice: " + e.getMessage());
-        }
-
-        return updatedAllotments;
+        return totalUpdatedAllotments;
     }
 
 
@@ -306,28 +400,38 @@ public class AllotmentService {
             String branch,
             String year) {
 
-        List<Allotment> allotments =
-                allotmentRepository
-                .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                        gender,
-                        branch,
-                        year
-                );
+        String normalizedGender = "GIRLS".equalsIgnoreCase(gender) ? "GIRLS" : "BOYS";
+        String effectiveYear = (year != null && !year.trim().isEmpty()) ? year.trim() : "1";
+        boolean isAllBranches = (branch == null || branch.trim().isEmpty() || "ALL".equalsIgnoreCase(branch.trim()));
 
-        int totalCapacity = ReservationPolicy.getTotalCapacity(gender);
-        int reservedCapacity = ReservationPolicy.getReservedCapacity(gender);
-        int openCapacity = ReservationPolicy.getOpenCapacity(gender);
+        List<Allotment> allotments;
+        if (isAllBranches) {
+            allotments = allotmentRepository.findByGenderAndYearOrderByMeritRankAsc(normalizedGender, effectiveYear);
+        } else {
+            allotments = allotmentRepository.findByGenderAndBranchAndYearOrderByMeritRankAsc(normalizedGender, branch.trim().toUpperCase(), effectiveYear);
+        }
 
-        List<ReservationQuota> quotas = ReservationPolicy.getQuotasForGender(gender);
+        if (allotments != null) {
+            allotments = allotments.stream()
+                    .filter(a -> !"SPOT".equalsIgnoreCase(a.getAllotmentRound()))
+                    .collect(Collectors.toList());
+        } else {
+            allotments = new ArrayList<>();
+        }
+
+        int multiplier = isAllBranches ? ReservationPolicy.ALL_BRANCHES.size() : 1;
+        int totalCapacity = ReservationPolicy.getTotalCapacity(normalizedGender) * multiplier;
+        int reservedCapacity = ReservationPolicy.getReservedCapacity(normalizedGender) * multiplier;
+        int openCapacity = ReservationPolicy.getOpenCapacity(normalizedGender) * multiplier;
+
+        List<ReservationQuota> quotas = ReservationPolicy.getQuotasForGender(normalizedGender);
 
         boolean isConverted = false;
         int allottedSeats = 0;
         int acceptedSeats = 0;
         int waitingCount = 0;
 
-        List<Map<String, Object>> quotaBreakdown = new ArrayList<>();
-
-        if (allotments != null && !allotments.isEmpty()) {
+        if (!allotments.isEmpty()) {
             for (Allotment a : allotments) {
                 if (Boolean.TRUE.equals(a.getIsConverted())) {
                     isConverted = true;
@@ -343,37 +447,82 @@ public class AllotmentService {
                     waitingCount++;
                 }
             }
+        }
 
-            for (ReservationQuota quota : quotas) {
-                long occupied = allotments.stream()
-                        .filter(a -> quota.getName().equalsIgnoreCase(a.getAllotmentCategory()))
-                        .filter(a -> "ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus())
-                                || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()))
-                        .count();
+        List<Map<String, Object>> quotaBreakdown = new ArrayList<>();
+        int unusedReservedSeats = 0;
 
-                int unused = (int) Math.max(0, quota.getSeatCapacity() - occupied);
+        for (ReservationQuota quota : quotas) {
+            int quotaCap = quota.getSeatCapacity() * multiplier;
+            long occupied = allotments.stream()
+                    .filter(a -> quota.getName().equalsIgnoreCase(a.getAllotmentCategory()))
+                    .filter(a -> "ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus())
+                            || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()))
+                    .count();
 
-                Map<String, Object> qMap = new HashMap<>();
-                qMap.put("quotaName", quota.getName());
-                qMap.put("capacity", quota.getSeatCapacity());
-                qMap.put("occupied", occupied);
-                qMap.put("unused", unused);
-                qMap.put("isReserved", quota.isReserved());
-                quotaBreakdown.add(qMap);
+            int unused = (int) Math.max(0, quotaCap - occupied);
+
+            Map<String, Object> qMap = new HashMap<>();
+            qMap.put("quotaName", quota.getName());
+            qMap.put("capacity", quotaCap);
+            qMap.put("occupied", occupied);
+            qMap.put("unused", unused);
+            qMap.put("isReserved", quota.isReserved());
+            quotaBreakdown.add(qMap);
+
+            if (quota.isReserved()) {
+                unusedReservedSeats += unused;
             }
         }
 
-        int unusedReservedSeats = 0;
-        for (Map<String, Object> q : quotaBreakdown) {
-            if (Boolean.TRUE.equals(q.get("isReserved"))) {
-                unusedReservedSeats += (int) q.get("unused");
+        // Branch-wise summary breakdown
+        List<Map<String, Object>> branchSummaries = new ArrayList<>();
+        if (isAllBranches) {
+            for (String b : ReservationPolicy.ALL_BRANCHES) {
+                List<Allotment> bAllotments = allotments.stream()
+                        .filter(a -> b.equalsIgnoreCase(a.getBranch()))
+                        .collect(Collectors.toList());
+
+                int bCapacity = ReservationPolicy.getTotalCapacity(normalizedGender);
+                int bAllotted = 0;
+                int bWaiting = 0;
+                boolean bConverted = false;
+                for (Allotment ba : bAllotments) {
+                    if (Boolean.TRUE.equals(ba.getIsConverted())) bConverted = true;
+                    if ("ALLOTTED".equalsIgnoreCase(ba.getAllotmentStatus()) || "ACCEPTED".equalsIgnoreCase(ba.getAllotmentStatus())) {
+                        bAllotted++;
+                    }
+                    if ("WAITING".equalsIgnoreCase(ba.getAllotmentStatus())) {
+                        bWaiting++;
+                    }
+                }
+
+                int bUnusedReserved = 0;
+                for (ReservationQuota q : quotas) {
+                    if (q.isReserved()) {
+                        long occ = bAllotments.stream()
+                                .filter(a -> q.getName().equalsIgnoreCase(a.getAllotmentCategory()))
+                                .filter(a -> "ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus()) || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()))
+                                .count();
+                        bUnusedReserved += (int) Math.max(0, q.getSeatCapacity() - occ);
+                    }
+                }
+
+                Map<String, Object> bMap = new HashMap<>();
+                bMap.put("branch", b);
+                bMap.put("totalCapacity", bCapacity);
+                bMap.put("allottedSeats", bAllotted);
+                bMap.put("waitingCount", bWaiting);
+                bMap.put("unusedReservedSeats", bUnusedReserved);
+                bMap.put("isConverted", bConverted);
+                branchSummaries.add(bMap);
             }
         }
 
         Map<String, Object> summary = new HashMap<>();
-        summary.put("gender", gender);
-        summary.put("branch", branch);
-        summary.put("year", year);
+        summary.put("gender", normalizedGender);
+        summary.put("branch", isAllBranches ? "ALL" : branch.trim().toUpperCase());
+        summary.put("year", effectiveYear);
         summary.put("totalCapacity", totalCapacity);
         summary.put("reservedCapacity", reservedCapacity);
         summary.put("openCapacity", openCapacity);
@@ -385,6 +534,7 @@ public class AllotmentService {
         summary.put("isConverted", isConverted);
         summary.put("canConvert", !isConverted && unusedReservedSeats > 0 && waitingCount > 0);
         summary.put("quotaBreakdown", quotaBreakdown);
+        summary.put("branchSummaries", branchSummaries);
 
         return summary;
     }
@@ -544,17 +694,23 @@ public class AllotmentService {
 
         switch (branch.trim().toUpperCase()) {
             case "COMPUTER":
+            case "CO":
                 return "COMP";
             case "MECHANICAL":
+            case "ME":
                 return "MECH";
             case "CIVIL":
+            case "CE":
                 return "CIVIL";
             case "ELECTRICAL":
+            case "EE":
                 return "ELEC";
+            case "INFORMATION TECHNOLOGY":
             case "IT":
+            case "IF":
                 return "IT";
             default:
-                return "GEN";
+                return branch.length() > 4 ? branch.substring(0, 4).toUpperCase() : branch.toUpperCase();
         }
     }
 
@@ -568,12 +724,28 @@ public class AllotmentService {
             String branch,
             String year) {
 
+        String normalizedGender = "GIRLS".equalsIgnoreCase(gender) ? "GIRLS" : "BOYS";
+        String effectiveYear = (year != null && !year.trim().isEmpty()) ? year.trim() : "1";
+
+        if (branch == null || branch.trim().isEmpty() || "ALL".equalsIgnoreCase(branch.trim())) {
+            List<Allotment> list = allotmentRepository
+                    .findByGenderAndYearOrderByMeritRankAsc(normalizedGender, effectiveYear);
+            if (list == null) return new ArrayList<>();
+            return list.stream()
+                    .filter(a -> !"SPOT".equalsIgnoreCase(a.getAllotmentRound()))
+                    .sorted(Comparator.comparing(Allotment::getBranch, Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(Allotment::getMeritRank, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .collect(Collectors.toList());
+        }
+
         return allotmentRepository
                 .findByGenderAndBranchAndYearOrderByMeritRankAsc(
-                        gender,
-                        branch,
-                        year
-                );
+                        normalizedGender,
+                        branch.trim().toUpperCase(),
+                        effectiveYear
+                ).stream()
+                .filter(a -> !"SPOT".equalsIgnoreCase(a.getAllotmentRound()))
+                .collect(Collectors.toList());
     }
 
 

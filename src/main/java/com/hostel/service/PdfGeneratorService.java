@@ -191,10 +191,34 @@ public class PdfGeneratorService {
         headerTable.addCell(cellRight);
         document.add(headerTable);
 
+        // Fetch Data from Database
+        List<Allotment> allAllotments = allotmentRepository.findAll();
+
+        List<Allotment> filteredAllotments = allAllotments.stream()
+                .filter(a -> gender.equalsIgnoreCase(a.getGender()))
+                .filter(a -> year.equals(a.getYear()))
+                .filter(a -> {
+                    if ("SPOT".equalsIgnoreCase(round)) {
+                        return "SPOT".equalsIgnoreCase(a.getAllotmentRound())
+                                && ("ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus()) || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()));
+                    } else {
+                        return !"SPOT".equalsIgnoreCase(a.getAllotmentRound())
+                                && ("ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus()) || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()));
+                    }
+                })
+                .collect(Collectors.toList());
+
+        boolean hasConvertedSeats = filteredAllotments.stream().anyMatch(a -> Boolean.TRUE.equals(a.getIsConverted()));
+
         // Document Title Banner
-        String roundTitle = "SPOT".equalsIgnoreCase(round)
-                ? "SPOT ROUND HOSTEL ALLOTMENT LIST"
-                : "BRANCHWISE PROVISIONAL ALLOTMENT LIST";
+        String roundTitle;
+        if ("SPOT".equalsIgnoreCase(round)) {
+            roundTitle = "SPOT ROUND HOSTEL ALLOTMENT LIST";
+        } else if (hasConvertedSeats) {
+            roundTitle = "BRANCHWISE FINAL ALLOTMENT LIST";
+        } else {
+            roundTitle = "BRANCHWISE PROVISIONAL ALLOTMENT LIST";
+        }
 
         String yearLabel = getYearLabel(year);
         String wingLabel = "BOYS".equalsIgnoreCase(gender) ? "BOYS HOSTEL" : "GIRLS HOSTEL";
@@ -224,23 +248,6 @@ public class PdfGeneratorService {
         divider.addCell(divCell);
         divider.setSpacingAfter(10);
         document.add(divider);
-
-        // Fetch Data from Database
-        List<Allotment> allAllotments = allotmentRepository.findAll();
-
-        List<Allotment> filteredAllotments = allAllotments.stream()
-                .filter(a -> gender.equalsIgnoreCase(a.getGender()))
-                .filter(a -> year.equals(a.getYear()))
-                .filter(a -> {
-                    if ("SPOT".equalsIgnoreCase(round)) {
-                        return "SPOT".equalsIgnoreCase(a.getAllotmentRound())
-                                && ("ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus()) || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()));
-                    } else {
-                        return !"SPOT".equalsIgnoreCase(a.getAllotmentRound())
-                                && ("ALLOTTED".equalsIgnoreCase(a.getAllotmentStatus()) || "ACCEPTED".equalsIgnoreCase(a.getAllotmentStatus()));
-                    }
-                })
-                .collect(Collectors.toList());
 
         // Sort students
         if ("SPOT".equalsIgnoreCase(round)) {

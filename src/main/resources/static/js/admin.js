@@ -945,7 +945,7 @@ function renderAllotmentSummaryAndControls(summary, gender, branch, year) {
     (summary.quotaBreakdown || []).forEach(function (q) {
         const isReserved = q.isReserved;
         const chipClass = isReserved ? 'reserved' : 'open';
-        const typeLabel = isReserved ? 'Reserved' : 'Open Quota';
+        const typeLabel = isReserved ? 'Reserved Quota' : 'Open (Merit)';
         quotaChipsHtml += `
             <div class="quota-chip ${chipClass}">
                 <span class="text-muted" style="font-size: 10px; display: block; text-transform: uppercase;">${typeLabel}</span>
@@ -954,6 +954,45 @@ function renderAllotmentSummaryAndControls(summary, gender, branch, year) {
             </div>
         `;
     });
+
+    let branchMatrixHtml = '';
+    if (summary.branchSummaries && summary.branchSummaries.length > 0) {
+        branchMatrixHtml = `
+            <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                <div style="font-size: 12px; font-weight: 700; margin-bottom: 8px; color: #475569;">Branch-wise Capacity & Allotment Status:</div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-condensed" style="background: #fff; font-size: 12px; margin-bottom: 0;">
+                        <thead>
+                            <tr style="background: #f1f5f9;">
+                                <th>Branch</th>
+                                <th class="text-center">Capacity</th>
+                                <th class="text-center">Allotted</th>
+                                <th class="text-center">Unused Reserved</th>
+                                <th class="text-center">Waiting</th>
+                                <th class="text-center">Stage 2 Conversion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        summary.branchSummaries.forEach(function (bs) {
+            branchMatrixHtml += `
+                <tr>
+                    <td><strong>${bs.branch}</strong></td>
+                    <td class="text-center">${bs.totalCapacity}</td>
+                    <td class="text-center"><span class="badge" style="background: #2563eb;">${bs.allottedSeats}</span></td>
+                    <td class="text-center">${bs.unusedReservedSeats > 0 ? `<span class="badge" style="background: #f59e0b;">${bs.unusedReservedSeats} vacant</span>` : '<span class="text-success">0</span>'}</td>
+                    <td class="text-center"><span class="badge badge-waiting">${bs.waitingCount}</span></td>
+                    <td class="text-center">${bs.isConverted ? '<span class="text-success glyphicon glyphicon-ok-sign"></span> Converted' : (bs.unusedReservedSeats > 0 && bs.waitingCount > 0 ? '<span class="text-warning font-weight-bold">Pending</span>' : '<span class="text-muted">N/A</span>')}</td>
+                </tr>
+            `;
+        });
+        branchMatrixHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
 
     let summaryHtml = `
         <div class="panel panel-custom" style="background: #f8fafc; margin-bottom: 20px;">
@@ -989,6 +1028,8 @@ function renderAllotmentSummaryAndControls(summary, gender, branch, year) {
                     <div style="font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #475569;">Quota Distribution & Seat Status:</div>
                     <div>${quotaChipsHtml}</div>
                 </div>
+
+                ${branchMatrixHtml}
             </div>
         </div>
     `;
@@ -1003,10 +1044,10 @@ function renderAllotmentSummaryAndControls(summary, gender, branch, year) {
                 <div class="row">
                     <div class="col-md-8 col-sm-7">
                         <h4 style="margin-top: 0; color: #b45309; font-weight: 700;">
-                            <span class="glyphicon glyphicon-info-sign"></span> Stage 2: Convert Unused Reserved Seats
+                            <span class="glyphicon glyphicon-info-sign"></span> Stage 2: Convert Unused Reserved Seats to OPEN
                         </h4>
                         <p style="margin-bottom: 0; color: #92400e; font-size: 13px;">
-                            <strong>${summary.unusedReservedSeats}</strong> reserved quota seat(s) remain unused. You can convert them to <strong>OPEN</strong> category seats so they can be filled by eligible waiting list candidates strictly in order of overall merit rank.
+                            <strong>${summary.unusedReservedSeats}</strong> reserved quota seat(s) currently remain vacant. Clicking the button below will convert these vacant reserved seats into <strong>OPEN</strong> seats and allocate them exclusively to eligible <strong>WAITING</strong> students in strict merit rank order.
                         </p>
                     </div>
                     <div class="col-md-4 col-sm-5 text-right" style="padding-top: 5px;">
@@ -1020,7 +1061,7 @@ function renderAllotmentSummaryAndControls(summary, gender, branch, year) {
 
         $('#btn-convert-reserved-seats').on('click', function () {
             const btn = $(this);
-            if (!confirm(`Convert ${summary.unusedReservedSeats} unused reserved seat(s) to OPEN category and allocate them to waiting students in order of merit?`)) {
+            if (!confirm(`Convert ${summary.unusedReservedSeats} unused reserved seat(s) to OPEN category and allocate them to waiting students strictly by merit rank?`)) {
                 return;
             }
 
@@ -1032,7 +1073,7 @@ function renderAllotmentSummaryAndControls(summary, gender, branch, year) {
                 year: year
             })
             .done(function (updatedList) {
-                alert(`Stage 2 Conversion Successful! ${summary.unusedReservedSeats} unused reserved seat(s) converted to OPEN and allocated strictly by merit.`);
+                alert(`Stage 2 Conversion Successful! ${summary.unusedReservedSeats} unused reserved seat(s) converted to OPEN and allocated strictly by merit rank.`);
                 loadAndRenderAllotmentView(gender, branch, year, updatedList);
             })
             .fail(function (xhr) {
@@ -1044,8 +1085,8 @@ function renderAllotmentSummaryAndControls(summary, gender, branch, year) {
         toolbar.removeClass('hidden').html(`
             <div class="alert alert-success" style="border-left: 5px solid #10b981; background-color: #f0fdf4; padding: 12px 15px; border-radius: 6px;">
                 <span class="glyphicon glyphicon-ok-sign" style="color: #16a34a; font-size: 16px; vertical-align: middle;"></span>
-                <strong style="color: #15803d; margin-left: 5px;">Stage 2 Applied:</strong>
-                <span style="color: #166534; font-size: 13px;">Unused reserved seats for this cycle have been converted into OPEN seats and allocated to waiting list students according to overall merit.</span>
+                <strong style="color: #15803d; margin-left: 5px;">Final Allotment Active (Stage 2 Converted):</strong>
+                <span style="color: #166534; font-size: 13px;">Unused reserved seats for this allotment cycle have been converted into OPEN seats and allocated to waiting list students according to overall merit rank.</span>
             </div>
         `);
     } else {
@@ -1071,10 +1112,10 @@ function renderAdminAllotmentTable(list, gender, branch, year) {
                         <th style="width: 70px;">Rank</th>
                         <th>Student Name</th>
                         <th>Enrollment No</th>
+                        <th>Branch</th>
                         <th>Assigned Seat</th>
                         <th>Original Category</th>
-                        <th>Common Category</th>
-                        <th>Allotted Quota</th>
+                        <th>Allotted Seat Type</th>
                         <th>Allocation Mode</th>
                         <th>Aggregate</th>
                         <th>Status</th>
@@ -1088,6 +1129,24 @@ function renderAdminAllotmentTable(list, gender, branch, year) {
         const isConverted = Boolean(a.isConverted);
         const statusClass = a.allotmentStatus === 'ACCEPTED' ? 'status-approved' : (a.allotmentStatus === 'ALLOTTED' ? 'status-pending' : (a.allotmentStatus === 'REJECTED' ? 'status-rejected' : 'status-waiting'));
 
+        // Formatted Allotted Seat Type label
+        let seatTypeBadge = '';
+        if (isWaiting) {
+            seatTypeBadge = '<span class="label label-default">WAITING</span>';
+        } else if (isConverted) {
+            seatTypeBadge = '<span class="label label-warning" style="font-size: 11px;">OPEN (Converted)</span>';
+        } else if (a.allotmentCategory === 'OPEN') {
+            seatTypeBadge = '<span class="label label-primary" style="font-size: 11px;">OPEN (Merit)</span>';
+        } else if (a.allotmentCategory === 'OBC') {
+            seatTypeBadge = '<span class="label label-success" style="font-size: 11px;">OBC (Reserved)</span>';
+        } else if (a.allotmentCategory === 'SC/ST') {
+            seatTypeBadge = '<span class="label label-info" style="font-size: 11px;">SC/ST (Reserved)</span>';
+        } else if (a.allotmentCategory === 'NT') {
+            seatTypeBadge = '<span class="label" style="background-color: #0891b2; color: #fff; font-size: 11px;">NT (Reserved)</span>';
+        } else {
+            seatTypeBadge = `<span class="label label-default" style="font-size: 11px;">${a.allotmentCategory || 'ALLOTTED'}</span>`;
+        }
+
         html += `
             <tr style="${isConverted ? 'background-color: #fffbeb;' : (isWaiting ? 'color: #64748b;' : '')}">
                 <td><strong>#${a.meritRank || '--'}</strong></td>
@@ -1095,25 +1154,20 @@ function renderAdminAllotmentTable(list, gender, branch, year) {
                     <strong>${a.application?.fullName || a.meritList?.studentName || 'Student'}</strong>
                 </td>
                 <td>${a.application?.enrollmentNumber || a.meritList?.enrollmentNo || '--'}</td>
+                <td><span class="label label-default">${a.branch || '--'}</span></td>
 
                 <td>
                     ${isWaiting ? `<span class="badge badge-waiting">${a.seatNumber || 'WAITING'}</span>` : `<span class="label label-primary" style="font-size: 12px;">${a.seatNumber || 'N/A'}</span>`}
                 </td>
 
                 <td>
-                    <span class="label label-default" style="font-size: 11px;">
+                    <span class="label label-default" style="font-size: 11px; font-weight: 700;">
                         ${a.category || '--'}
                     </span>
                 </td>
 
                 <td>
-                    <strong>${a.commonCategory || '--'}</strong>
-                </td>
-
-                <td>
-                    <span class="label ${isWaiting ? 'label-default' : (isConverted ? 'label-warning' : 'label-info')}">
-                        ${a.allotmentCategory || '--'}
-                    </span>
+                    ${seatTypeBadge}
                 </td>
 
                 <td>

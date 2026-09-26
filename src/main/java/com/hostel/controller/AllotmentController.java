@@ -25,7 +25,7 @@ public class AllotmentController {
     @PostMapping("/generate")
     public ResponseEntity<?> generateAllotment(
             @RequestParam String gender,
-            @RequestParam String branch,
+            @RequestParam(required = false, defaultValue = "ALL") String branch,
             @RequestParam String year) {
 
         try {
@@ -52,7 +52,7 @@ public class AllotmentController {
     @PostMapping("/convert-reserved")
     public ResponseEntity<?> convertReservedSeats(
             @RequestParam String gender,
-            @RequestParam String branch,
+            @RequestParam(required = false, defaultValue = "ALL") String branch,
             @RequestParam String year) {
 
         try {
@@ -79,7 +79,7 @@ public class AllotmentController {
     @GetMapping("/summary")
     public ResponseEntity<?> getAllotmentSummary(
             @RequestParam String gender,
-            @RequestParam String branch,
+            @RequestParam(required = false, defaultValue = "ALL") String branch,
             @RequestParam String year) {
 
         try {
@@ -106,7 +106,7 @@ public class AllotmentController {
     @GetMapping
     public ResponseEntity<?> getAllotment(
             @RequestParam String gender,
-            @RequestParam String branch,
+            @RequestParam(required = false, defaultValue = "ALL") String branch,
             @RequestParam String year) {
 
         try {
